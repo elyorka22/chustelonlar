@@ -1,0 +1,44 @@
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import type { UserRole } from "@prisma/client";
+import { redirect } from "next/navigation";
+
+export async function getCurrentUser() {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  return prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      role: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function requireAuth() {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  if (user.role === "BANNED") {
+    redirect("/login?error=banned");
+  }
+  return user;
+}
+
+export async function requireAdmin() {
+  const user = await requireAuth();
+  if (user.role !== "ADMIN") {
+    redirect("/");
+  }
+  return user;
+}
+
+export function hasRole(role: UserRole, allowed: UserRole[]): boolean {
+  return allowed.includes(role);
+}

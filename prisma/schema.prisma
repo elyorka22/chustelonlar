@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  BANNED
+}
+
+enum AdStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SOLD
+  DELETED
+}
+
+model Category {
+  slug       String   @id
+  label      String
+  shortLabel String   @map("short_label")
+  emoji      String   @default("📦")
+  iconBg     String   @default("bg-blue-100") @map("icon_bg")
+  imageUrl   String?  @map("image_url")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  ads Ad[]
+
+  @@map("categories")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  ads       Ad[]
+  favorites Favorite[]
+  reports   Report[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Ad {
+  id          String     @id @default(cuid())
+  title       String
+  description String     @db.Text
+  category    String
+  price       Float
+  latitude    Float
+  longitude   Float
+  district    String
+  phone       String
+  telegram    String?
+  status      AdStatus   @default(PENDING)
+  isPremium   Boolean    @default(false) @map("is_premium")
+  views       Int        @default(0)
+  createdById String     @map("created_by")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt
+
+  createdBy User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  categoryRef Category @relation(fields: [category], references: [slug])
+  images    AdImage[]
+  favorites Favorite[]
+  reports   Report[]
+
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@index([latitude, longitude])
+  @@map("ads")
+}
+
+model AdImage {
+  id       String @id @default(cuid())
+  adId     String @map("ad_id")
+  fullUrl  String @map("full_url")
+  thumbUrl String @map("thumb_url")
+  order    Int    @default(0)
+
+  ad Ad @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@index([adId])
+  @@map("ad_images")
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  adId      String   @map("ad_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ad   Ad   @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, adId])
+  @@map("favorites")
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  adId      String   @map("ad_id")
+  userId    String?  @map("user_id")
+  reason    String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  ad   Ad    @relation(fields: [adId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([adId])
+  @@map("reports")
+}

@@ -1,0 +1,281 @@
+"use server";
+
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import bcrypt from "bcryptjs";
+import { registerSchema } from "@/lib/validations";
+import {
+  createAd,
+  deleteAd,
+  toggleFavorite,
+  createReport,
+  updateAdStatus,
+} from "@/lib/services/ads";
+import type { CreateAdInput } from "@/lib/validations";
+import { revalidatePath } from "next/cache";
+
+export async function registerUser(formData: FormData) {
+  const raw = {
+    name: formData.get("name") as string,
+    email: formData.get("email") as string,
+    password: formData.get("password") as string,
+  };
+
+  const parsed = registerSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const existing = await prisma.user.findUnique({
+    where: { email: parsed.data.email },
+  });
+
+  if (existing) {
+    return { error: "Bu email allaqachon ro'yxatdan o'tgan" };
+  }
+
+  const hashedPassword = await bcrypt.hash(parsed.data.password, 12);
+
+  await prisma.user.create({
+    data: {
+      name: parsed.data.name,
+      email: parsed.data.email,
+      password: hashedPassword,
+    },
+  });
+
+  return { success: true };
+}
+
+export async function submitAd(input: CreateAdInput) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  try {
+    const ad = await createAd(session.user.id, input);
+    revalidatePath("/dashboard");
+    return { success: true, adId: ad.id };
+  } catch (error) {
+    console.error("Submit ad error:", error);
+    return { error: "E'lon yaratishda xatolik yuz berdi" };
+  }
+}
+
+export async function markAdSold(adId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Avtorizatsiya talab qilinadi" };
+
+  const ad = await prisma.ad.findFirst({
+    where: { id: adId, createdById: session.user.id },
+  });
+
+  if (!ad) return { error: "E'lon topilmadi" };
+
+  await updateAdStatus(adId, "SOLD");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function removeAd(adId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Avtorizatsiya talab qilinadi" };
+
+  const result = await deleteAd(adId, session.user.id);
+  if (!result) return { error: "E'lon topilmadi" };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function toggleAdFavorite(adId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Avtorizatsiya talab qilinadi" };
+
+  const result = await toggleFavorite(session.user.id, adId);
+  return { success: true, ...result };
+}
+
+export async function submitReport(adId: string, reason: string) {
+  const session = await auth();
+
+  try {
+    await createReport(adId, reason, session?.user?.id);
+    return { success: true };
+  } catch (error) {
+    console.error("Report error:", error);
+    return { error: "Shikoyat yuborishda xatolik" };
+  }
+}
+
+export async function moderateAd(
+  adId: string,
+  action: "approve" | "reject"
+) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const status = action === "approve" ? "APPROVED" : "REJECTED";
+  await updateAdStatus(adId, status);
+  revalidatePath("/admin");
+  revalidatePath("/admin/ads");
+  revalidatePath("/ads");
+  return { success: true };
+}
+
+export async function adminDeleteAd(adId: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  await updateAdStatus(adId, "DELETED");
+  revalidatePath("/admin");
+  revalidatePath("/admin/ads");
+  revalidatePath("/admin/reports");
+  return { success: true };
+}
+
+export async function adminBanUser(userId: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { banUser } = await import("@/lib/services/ads");
+  await banUser(userId);
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function adminUnbanUser(userId: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { unbanUser } = await import("@/lib/services/ads");
+  await unbanUser(userId);
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function adminMakeAdmin(userId: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { promoteToAdmin } = await import("@/lib/services/ads");
+  await promoteToAdmin(userId);
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function adminResolveReport(reportId: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  await prisma.report.delete({ where: { id: reportId } });
+  revalidatePath("/admin");
+  revalidatePath("/admin/reports");
+  return { success: true };
+}
+
+export async function adminUpdateCategoryImage(
+  slug: string,
+  imageUrl: string
+) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { upsertCategoryImage } = await import("@/lib/services/categories");
+  try {
+    await upsertCategoryImage(slug, imageUrl);
+  } catch {
+    return { error: "Kategoriya topilmadi" };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/categories");
+  return { success: true };
+}
+
+export async function adminRemoveCategoryImage(slug: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { removeCategoryImage } = await import("@/lib/services/categories");
+  try {
+    await removeCategoryImage(slug);
+  } catch {
+    return { error: "Kategoriya topilmadi" };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/categories");
+  return { success: true };
+}
+
+export async function adminCreateCategory(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const label = (formData.get("label") as string)?.trim();
+  const shortLabel = (formData.get("shortLabel") as string)?.trim();
+  const emoji = (formData.get("emoji") as string)?.trim();
+  const iconBg = (formData.get("iconBg") as string)?.trim();
+
+  if (!label || label.length < 2) {
+    return { error: "Nom kamida 2 ta belgidan iborat bo'lishi kerak" };
+  }
+  if (!shortLabel || shortLabel.length < 2) {
+    return { error: "Qisqa nom kamida 2 ta belgidan iborat bo'lishi kerak" };
+  }
+
+  const { createCategory } = await import("@/lib/services/categories");
+  const category = await createCategory({
+    label,
+    shortLabel,
+    emoji: emoji || "📦",
+    iconBg: iconBg || "bg-blue-100",
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin/categories");
+  return { success: true, category };
+}
+
+export async function adminDeleteCategory(slug: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { deactivateCategory } = await import("@/lib/services/categories");
+  try {
+    const result = await deactivateCategory(slug);
+    revalidatePath("/");
+    revalidatePath("/admin/categories");
+    if (result.deactivated) {
+      return { success: true, message: "Kategoriya yashirildi (e'lonlar mavjud)" };
+    }
+    return { success: true, message: "Kategoriya o'chirildi" };
+  } catch {
+    return { error: "Kategoriya topilmadi" };
+  }
+}

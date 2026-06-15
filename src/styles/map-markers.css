@@ -1,0 +1,95 @@
+/**
+ * Chust E'lon map marker overrides.
+ * Leaflet's .leaflet-div-icon adds white bg + border (square box).
+ * These rules MUST override leaflet.css — loaded after leaflet in components.
+ */
+
+/* Strip Leaflet's default square divIcon chrome from our markers */
+.leaflet-marker-icon.chust-cluster-marker,
+.leaflet-marker-icon.chust-single-marker,
+.leaflet-div-icon.chust-cluster-marker,
+.leaflet-div-icon.chust-single-marker {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+/* Neutralize legacy markercluster square wrappers if they appear */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: transparent !important;
+  border-radius: 9999px !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: transparent !important;
+  border-radius: 9999px !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Cluster circle — backup to inline styles */
+.chust-cluster-circle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9999px !important;
+  aspect-ratio: 1 / 1 !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chust-cluster-circle:hover {
+  transform: scale(1.08);
+}
+
+/* Single marker double-circle — backup to inline styles */
+.chust-single-circle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9999px !important;
+  aspect-ratio: 1 / 1 !important;
+  transition: transform 0.2s ease;
+}
+
+.chust-inner-circle {
+  border-radius: 9999px !important;
+  aspect-ratio: 1 / 1 !important;
+  display: block !important;
+}
+
+.chust-single-circle:hover {
+  transform: scale(1.1);
+}
+
+.chust-single-circle--selected {
+  animation: chust-marker-pulse 1.5s ease-in-out infinite;
+}
+
+/* Tap animation */
+.chust-marker-tap {
+  transform: scale(1.15) !important;
+}
+
+@keyframes chust-marker-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.15); }
+}
+
+@keyframes chust-marker-fade-in {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.chust-cluster-circle,
+.chust-single-circle {
+  animation: chust-marker-fade-in 0.3s ease-out forwards;
+}
