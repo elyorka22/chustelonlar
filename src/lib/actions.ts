@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getPrisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { registerSchema } from "@/lib/validations";
 import {
@@ -26,7 +26,7 @@ export async function registerUser(formData: FormData) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const existing = await prisma.user.findUnique({
+  const existing = await getPrisma().user.findUnique({
     where: { email: parsed.data.email },
   });
 
@@ -36,7 +36,7 @@ export async function registerUser(formData: FormData) {
 
   const hashedPassword = await bcrypt.hash(parsed.data.password, 12);
 
-  await prisma.user.create({
+  await getPrisma().user.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
@@ -67,7 +67,7 @@ export async function markAdSold(adId: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Avtorizatsiya talab qilinadi" };
 
-  const ad = await prisma.ad.findFirst({
+  const ad = await getPrisma().ad.findFirst({
     where: { id: adId, createdById: session.user.id },
   });
 
@@ -184,7 +184,7 @@ export async function adminResolveReport(reportId: string) {
     return { error: "Ruxsat yo'q" };
   }
 
-  await prisma.report.delete({ where: { id: reportId } });
+  await getPrisma().report.delete({ where: { id: reportId } });
   revalidatePath("/admin");
   revalidatePath("/admin/reports");
   return { success: true };

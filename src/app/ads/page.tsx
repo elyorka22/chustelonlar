@@ -12,10 +12,22 @@ interface AdsPageProps {
 
 export default async function AdsPage({ searchParams }: AdsPageProps) {
   const params = await searchParams;
-  const [result, categories] = await Promise.all([
-    getAds(params),
-    getActiveCategories(),
-  ]);
 
-  return <AdsListingClient result={result} params={params} categories={categories} />;
+  try {
+    const [result, categories] = await Promise.all([
+      getAds(params),
+      getActiveCategories(),
+    ]);
+
+    return <AdsListingClient result={result} params={params} categories={categories} />;
+  } catch (error) {
+    console.error("[/ads]", error);
+    return (
+      <AdsListingClient
+        result={{ data: [], total: 0, page: 1, totalPages: 0 }}
+        params={params}
+        categories={[]}
+      />
+    );
+  }
 }

@@ -33,11 +33,20 @@ export default function MapPage() {
   useEffect(() => {
     async function fetchAds() {
       setLoading(true);
-      const params = category ? `?category=${category}` : "";
-      const res = await fetch(`/api/ads/map${params}`);
-      const data = await res.json();
-      setAds(data);
-      setLoading(false);
+      try {
+        const params = category ? `?category=${category}` : "";
+        const res = await fetch(`/api/ads/map${params}`);
+        if (!res.ok) {
+          setAds([]);
+          return;
+        }
+        const data = await res.json();
+        setAds(Array.isArray(data) ? data : []);
+      } catch {
+        setAds([]);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchAds();
   }, [category]);

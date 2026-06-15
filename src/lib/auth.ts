@@ -3,11 +3,12 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/db";
+import { getPrisma } from "@/lib/db";
 import type { UserRole } from "@prisma/client";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  trustHost: true,
+  adapter: PrismaAdapter(getPrisma()),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -29,7 +30,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await getPrisma().user.findUnique({
           where: { email: credentials.email as string },
         });
 
@@ -78,7 +79,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user }) {
       if (!user.email) return false;
 
-      const existingUser = await prisma.user.findUnique({
+      const existingUser = await getPrisma().user.findUnique({
         where: { email: user.email },
       });
 

@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { getPrisma } from "@/lib/db";
 import type { UserRole } from "@prisma/client";
 import { redirect } from "next/navigation";
 
@@ -7,7 +7,7 @@ export async function getCurrentUser() {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  return prisma.user.findUnique({
+  return getPrisma().user.findUnique({
     where: { id: session.user.id },
     select: {
       id: true,

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { getPrisma } from "@/lib/db";
 import { cacheDel, cacheGet, cacheSet } from "@/lib/redis";
 import type { CategoryData } from "@/types";
 
@@ -55,7 +55,7 @@ export async function getActiveCategories(): Promise<CategoryData[]> {
   const cached = await cacheGet<CategoryData[]>(CACHE_KEY);
   if (cached) return cached;
 
-  const categories = await prisma.category.findMany({
+  const categories = await getPrisma().category.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
   });
@@ -69,7 +69,7 @@ export async function getAllCategories(): Promise<CategoryData[]> {
   const cached = await cacheGet<CategoryData[]>(CACHE_ALL_KEY);
   if (cached) return cached;
 
-  const categories = await prisma.category.findMany({
+  const categories = await getPrisma().category.findMany({
     orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
   });
 
@@ -88,7 +88,7 @@ export async function getCategoryImages(): Promise<CategoryImagesMap> {
 }
 
 export async function isValidCategory(slug: string): Promise<boolean> {
-  const category = await prisma.category.findFirst({
+  const category = await getPrisma().category.findFirst({
     where: { slug, isActive: true },
     select: { slug: true },
   });
@@ -103,14 +103,14 @@ export async function createCategory(input: {
   imageUrl?: string | null;
 }) {
   let slug = generateCategorySlug(input.label);
-  const existing = await prisma.category.findUnique({ where: { slug } });
+  const existing = await getPrisma().category.findUnique({ where: { slug } });
   if (existing) {
     slug = `${slug}_${Date.now().toString(36)}`;
   }
 
-  const maxOrder = await prisma.category.aggregate({ _max: { sortOrder: true } });
+  const maxOrder = await getPrisma().category.aggregate({ _max: { sortOrder: true } });
 
-  const category = await prisma.category.create({
+  const category = await getPrisma().category.create({
     data: {
       slug,
       label: input.label.trim(),
@@ -127,7 +127,7 @@ export async function createCategory(input: {
 }
 
 export async function upsertCategoryImage(slug: string, imageUrl: string) {
-  const result = await prisma.category.update({
+  const result = await getPrisma().category.update({
     where: { slug },
     data: { imageUrl },
   });
@@ -136,7 +136,7 @@ export async function upsertCategoryImage(slug: string, imageUrl: string) {
 }
 
 export async function removeCategoryImage(slug: string) {
-  const result = await prisma.category.update({
+  const result = await getPrisma().category.update({
     where: { slug },
     data: { imageUrl: null },
   });
@@ -145,12 +145,12 @@ export async function removeCategoryImage(slug: string) {
 }
 
 export async function deactivateCategory(slug: string) {
-  const adsCount = await prisma.ad.count({
+  const adsCount = await getPrisma().ad.count({
     where: { category: slug, status: { not: "DELETED" } },
   });
 
   if (adsCount > 0) {
-    const result = await prisma.category.update({
+    const result = await getPrisma().category.update({
       where: { slug },
       data: { isActive: false },
     });
@@ -158,7 +158,7 @@ export async function deactivateCategory(slug: string) {
     return { category: toCategoryData(result), deactivated: true };
   }
 
-  await prisma.category.delete({ where: { slug } });
+  await getPrisma().category.delete({ where: { slug } });
   await invalidateCategoryCache();
   return { category: null, deactivated: false, deleted: true };
 }

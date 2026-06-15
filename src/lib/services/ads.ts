@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { getPrisma } from "@/lib/db";
 import { adFilterSchema, createAdSchema, reportSchema } from "@/lib/validations";
 import { sanitizeText, sanitizePhone, sanitizeTelegram } from "@/lib/sanitize";
 import { cacheGet, cacheSet } from "@/lib/redis";
@@ -71,14 +71,14 @@ export async function getAds(
   const skip = (filters.page - 1) * filters.limit;
 
   const [data, total] = await Promise.all([
-    prisma.ad.findMany({
+    getPrisma().ad.findMany({
       where,
       include: adInclude,
       orderBy,
       skip,
       take: filters.limit,
     }),
-    prisma.ad.count({ where }),
+    getPrisma().ad.count({ where }),
   ]);
 
   const result = {
@@ -93,7 +93,7 @@ export async function getAds(
 }
 
 export async function getAdById(id: string): Promise<AdWithImages | null> {
-  const ad = await prisma.ad.findUnique({
+  const ad = await getPrisma().ad.findUnique({
     where: { id },
     include: adInclude,
   });
@@ -102,7 +102,7 @@ export async function getAdById(id: string): Promise<AdWithImages | null> {
 }
 
 export async function incrementAdViews(id: string): Promise<void> {
-  await prisma.ad.update({
+  await getPrisma().ad.update({
     where: { id },
     data: { views: { increment: 1 } },
   });
@@ -116,7 +116,7 @@ export async function getMapAds(
     where.category = category;
   }
 
-  const ads = await prisma.ad.findMany({
+  const ads = await getPrisma().ad.findMany({
     where,
     select: {
       id: true,
@@ -147,7 +147,7 @@ export async function getMapAds(
 }
 
 export async function getLatestAds(limit = 8): Promise<AdWithImages[]> {
-  const ads = await prisma.ad.findMany({
+  const ads = await getPrisma().ad.findMany({
     where: { status: "APPROVED" },
     include: adInclude,
     orderBy: { createdAt: "desc" },
@@ -157,7 +157,7 @@ export async function getLatestAds(limit = 8): Promise<AdWithImages[]> {
 }
 
 export async function getPremiumAds(limit = 4): Promise<AdWithImages[]> {
-  const ads = await prisma.ad.findMany({
+  const ads = await getPrisma().ad.findMany({
     where: { status: "APPROVED", isPremium: true },
     include: adInclude,
     orderBy: { createdAt: "desc" },
@@ -171,7 +171,7 @@ export async function getSimilarAds(
   category: string,
   limit = 4
 ): Promise<AdWithImages[]> {
-  const ads = await prisma.ad.findMany({
+  const ads = await getPrisma().ad.findMany({
     where: {
       status: "APPROVED",
       category: category,
@@ -196,7 +196,7 @@ export async function createAd(
     throw new Error("Noto'g'ri kategoriya");
   }
 
-  const ad = await prisma.ad.create({
+  const ad = await getPrisma().ad.create({
     data: {
       title: sanitizeText(data.title),
       description: sanitizeText(data.description),
@@ -224,7 +224,7 @@ export async function createAd(
 }
 
 export async function getUserAds(userId: string) {
-  return prisma.ad.findMany({
+  return getPrisma().ad.findMany({
     where: { createdById: userId, status: { not: "DELETED" } },
     include: adInclude,
     orderBy: { createdAt: "desc" },
@@ -233,11 +233,11 @@ export async function getUserAds(userId: string) {
 
 export async function getUserStats(userId: string) {
   const [total, approved, pending, sold, totalViews] = await Promise.all([
-    prisma.ad.count({ where: { createdById: userId, status: { not: "DELETED" } } }),
-    prisma.ad.count({ where: { createdById: userId, status: "APPROVED" } }),
-    prisma.ad.count({ where: { createdById: userId, status: "PENDING" } }),
-    prisma.ad.count({ where: { createdById: userId, status: "SOLD" } }),
-    prisma.ad.aggregate({
+    getPrisma().ad.count({ where: { createdById: userId, status: { not: "DELETED" } } }),
+    getPrisma().ad.count({ where: { createdById: userId, status: "APPROVED" } }),
+    getPrisma().ad.count({ where: { createdById: userId, status: "PENDING" } }),
+    getPrisma().ad.count({ where: { createdById: userId, status: "SOLD" } }),
+    getPrisma().ad.aggregate({
       where: { createdById: userId },
       _sum: { views: true },
     }),
@@ -256,20 +256,20 @@ export async function updateAdStatus(
   adId: string,
   status: "APPROVED" | "REJECTED" | "SOLD" | "DELETED"
 ) {
-  return prisma.ad.update({
+  return getPrisma().ad.update({
     where: { id: adId },
     data: { status },
   });
 }
 
 export async function deleteAd(adId: string, userId: string) {
-  const ad = await prisma.ad.findFirst({
+  const ad = await getPrisma().ad.findFirst({
     where: { id: adId, createdById: userId },
   });
 
   if (!ad) return null;
 
-  return prisma.ad.update({
+  return getPrisma().ad.update({
     where: { id: adId },
     data: { status: "DELETED" },
   });
@@ -282,7 +282,7 @@ export async function createReport(
 ) {
   const data = reportSchema.parse({ adId, reason });
 
-  return prisma.report.create({
+  return getPrisma().report.create({
     data: {
       adId: data.adId,
       reason: sanitizeText(data.reason),
@@ -292,21 +292,21 @@ export async function createReport(
 }
 
 export async function toggleFavorite(userId: string, adId: string) {
-  const existing = await prisma.favorite.findUnique({
+  const existing = await getPrisma().favorite.findUnique({
     where: { userId_adId: { userId, adId } },
   });
 
   if (existing) {
-    await prisma.favorite.delete({ where: { id: existing.id } });
+    await getPrisma().favorite.delete({ where: { id: existing.id } });
     return { favorited: false };
   }
 
-  await prisma.favorite.create({ data: { userId, adId } });
+  await getPrisma().favorite.create({ data: { userId, adId } });
   return { favorited: true };
 }
 
 export async function getUserFavorites(userId: string) {
-  const favorites = await prisma.favorite.findMany({
+  const favorites = await getPrisma().favorite.findMany({
     where: { userId },
     include: {
       ad: { include: adInclude },
@@ -318,7 +318,7 @@ export async function getUserFavorites(userId: string) {
 }
 
 export async function isFavorited(userId: string, adId: string) {
-  const fav = await prisma.favorite.findUnique({
+  const fav = await getPrisma().favorite.findUnique({
     where: { userId_adId: { userId, adId } },
   });
   return !!fav;
@@ -340,30 +340,30 @@ export async function getAnalytics() {
     recentAds,
     recentUsers,
   ] = await Promise.all([
-    prisma.user.count(),
-    prisma.ad.count({ where: { status: { not: "DELETED" } } }),
-    prisma.ad.count({ where: { status: "PENDING" } }),
-    prisma.ad.count({ where: { status: "APPROVED" } }),
-    prisma.ad.count({ where: { status: "REJECTED" } }),
-    prisma.ad.aggregate({
+    getPrisma().user.count(),
+    getPrisma().ad.count({ where: { status: { not: "DELETED" } } }),
+    getPrisma().ad.count({ where: { status: "PENDING" } }),
+    getPrisma().ad.count({ where: { status: "APPROVED" } }),
+    getPrisma().ad.count({ where: { status: "REJECTED" } }),
+    getPrisma().ad.aggregate({
       where: { status: "APPROVED" },
       _sum: { views: true },
     }),
-    prisma.ad.groupBy({
+    getPrisma().ad.groupBy({
       by: ["category"],
       where: { status: "APPROVED" },
       _count: true,
     }),
-    prisma.ad.groupBy({
+    getPrisma().ad.groupBy({
       by: ["district"],
       where: { status: "APPROVED" },
       _count: true,
     }),
-    prisma.ad.findMany({
+    getPrisma().ad.findMany({
       where: { createdAt: { gte: thirtyDaysAgo } },
       select: { createdAt: true, views: true },
     }),
-    prisma.user.findMany({
+    getPrisma().user.findMany({
       where: { createdAt: { gte: thirtyDaysAgo } },
       select: { createdAt: true },
     }),
@@ -437,7 +437,7 @@ export async function getAnalytics() {
 }
 
 export async function getPendingAds() {
-  return prisma.ad.findMany({
+  return getPrisma().ad.findMany({
     where: { status: "PENDING" },
     include: adInclude,
     orderBy: { createdAt: "asc" },
@@ -445,7 +445,7 @@ export async function getPendingAds() {
 }
 
 export async function getReports() {
-  return prisma.report.findMany({
+  return getPrisma().report.findMany({
     include: {
       ad: { include: adInclude },
       user: { select: { id: true, name: true, email: true } },
@@ -455,28 +455,28 @@ export async function getReports() {
 }
 
 export async function banUser(userId: string) {
-  return prisma.user.update({
+  return getPrisma().user.update({
     where: { id: userId },
     data: { role: "BANNED" },
   });
 }
 
 export async function unbanUser(userId: string) {
-  return prisma.user.update({
+  return getPrisma().user.update({
     where: { id: userId },
     data: { role: "USER" },
   });
 }
 
 export async function promoteToAdmin(userId: string) {
-  return prisma.user.update({
+  return getPrisma().user.update({
     where: { id: userId },
     data: { role: "ADMIN" },
   });
 }
 
 export async function getAllUsers() {
-  return prisma.user.findMany({
+  return getPrisma().user.findMany({
     select: {
       id: true,
       name: true,

@@ -12,6 +12,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-chustelon}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-chustelon}?schema=public
       REDIS_URL: redis://redis:6379
+      AUTH_TRUST_HOST: "true"
     depends_on:
       postgres:
         condition: service_healthy

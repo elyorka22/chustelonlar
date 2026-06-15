@@ -5,7 +5,12 @@ export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 export async function GET(request: NextRequest) {
-  const category = request.nextUrl.searchParams.get("category") || undefined;
-  const ads = await getMapAds(category);
-  return NextResponse.json(ads);
+  try {
+    const category = request.nextUrl.searchParams.get("category") || undefined;
+    const ads = await getMapAds(category);
+    return NextResponse.json(ads);
+  } catch (error) {
+    console.error("[api/ads/map]", error);
+    return NextResponse.json([], { status: 500 });
+  }
 }
