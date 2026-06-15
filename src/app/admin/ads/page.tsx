@@ -1,6 +1,9 @@
 import { getPendingAds, getAnalytics, getReports } from "@/lib/services/ads";
 import { getAllCategories } from "@/lib/services/categories";
 import { AdminAdsClient } from "@/components/admin/admin-ads-client";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export const metadata = {
   title: "E'lonlar — Admin",

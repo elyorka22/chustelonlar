@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAds } from "@/lib/services/ads";
 import { rateLimit } from "@/lib/redis";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || "unknown";

@@ -1,4 +1,6 @@
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 import { getAds } from "@/lib/services/ads";
 import { getActiveCategories } from "@/lib/services/categories";

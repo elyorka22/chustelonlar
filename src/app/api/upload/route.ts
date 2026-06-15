@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/redis";
 import { processAndUploadImage, validateImageBuffer } from "@/lib/image";
 import { MAX_IMAGE_SIZE, ALLOWED_IMAGE_TYPES } from "@/lib/constants";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function POST(request: NextRequest) {
   const session = await auth();

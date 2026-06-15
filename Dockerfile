@@ -11,6 +11,12 @@ RUN npm ci
 COPY . .
 
 RUN npx prisma generate
+
+# Build must not connect to runtime Docker services (postgres/redis).
+# Route segments use `force-dynamic`; these envs are a safety net only.
+ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build?schema=public"
+ENV REDIS_URL=""
+
 RUN npm run build
 
 # Production stage

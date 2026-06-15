@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Do not pass runtime DATABASE_URL/REDIS_URL into the image build stage.
+      # Build uses force-dynamic routes; see Dockerfile builder ENV overrides.
     container_name: chustelon-app
     restart: unless-stopped
     env_file:

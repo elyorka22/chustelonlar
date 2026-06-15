@@ -1,8 +1,10 @@
 import Redis from "ioredis";
+import { isBuildPhase } from "@/lib/runtime";
 
 let redis: Redis | null = null;
 
 export function getRedis(): Redis | null {
+  if (isBuildPhase()) return null;
   if (!process.env.REDIS_URL) return null;
 
   if (!redis) {
