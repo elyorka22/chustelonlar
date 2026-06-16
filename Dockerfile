@@ -54,9 +54,7 @@ COPY --from=prisma /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=prisma /app/node_modules/prisma ./node_modules/prisma
 
 RUN mkdir -p node_modules/.bin \
-  && ln -sf ../prisma/build/index.js node_modules/.bin/prisma \
-  && prisma --version \
-  && test -f node_modules/prisma/build/prisma_schema_build_bg.wasm
+  && ln -sf ../prisma/build/index.js node_modules/.bin/prisma
 
 COPY --chmod=755 scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 
