@@ -13,6 +13,7 @@ import {
   createSingleCircleIcon,
   animateMarkerTap,
 } from "@/lib/map-markers";
+import { MAP_INIT_OPTIONS, MAP_TILE_OPTIONS, MAP_TILE_URL } from "@/lib/map-config";
 import type { MapAdMarker } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -31,6 +32,7 @@ export function AnalyticsMap({ ads, mode = "ads" }: AnalyticsMapProps) {
     if (!mapRef.current || mapInstance.current) return;
 
     const map = L.map(mapRef.current, {
+      ...MAP_INIT_OPTIONS,
       center: [MAP_CENTER.lat, MAP_CENTER.lng],
       zoom: MAP_ZOOM - 1,
       zoomControl: false,
@@ -38,10 +40,7 @@ export function AnalyticsMap({ ads, mode = "ads" }: AnalyticsMapProps) {
 
     L.control.zoom({ position: "topright" }).addTo(map);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap",
-      maxZoom: 19,
-    }).addTo(map);
+    L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(map);
 
     const cluster = L.markerClusterGroup(createClusterGroupOptions());
     map.addLayer(cluster);

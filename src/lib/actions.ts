@@ -109,6 +109,102 @@ export async function submitReport(adId: string, reason: string) {
   }
 }
 
+export async function updateProfile(name: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  const parsed = (await import("@/lib/validations")).updateProfileSchema.safeParse({
+    name,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  await getPrisma().user.update({
+    where: { id: session.user.id },
+    data: { name: parsed.data.name.trim() },
+  });
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function updatePassword(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  const { updatePasswordSchema } = await import("@/lib/validations");
+  const parsed = updatePasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const user = await getPrisma().user.findUnique({
+    where: { id: session.user.id },
+    select: { password: true },
+  });
+
+  if (!user?.password) {
+    return { error: "Google orqali kirgan hisob uchun parol o'rnatilmagan" };
+  }
+
+  const valid = await bcrypt.compare(parsed.data.currentPassword, user.password);
+  if (!valid) {
+    return { error: "Joriy parol noto'g'ri" };
+  }
+
+  const hashedPassword = await bcrypt.hash(parsed.data.newPassword, 12);
+  await getPrisma().user.update({
+    where: { id: session.user.id },
+    data: { password: hashedPassword },
+  });
+
+  return { success: true };
+}
+
+export async function deleteAccount(confirmationEmail: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  const user = await getPrisma().user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, email: true, role: true },
+  });
+
+  if (!user) {
+    return { error: "Foydalanuvchi topilmadi" };
+  }
+
+  if (confirmationEmail.trim().toLowerCase() !== user.email.toLowerCase()) {
+    return { error: "Email mos kelmadi. Hisobni o'chirish bekor qilindi." };
+  }
+
+  if (user.role === "ADMIN") {
+    const adminCount = await getPrisma().user.count({
+      where: { role: "ADMIN", id: { not: user.id } },
+    });
+    if (adminCount === 0) {
+      return {
+        error: "Yagona admin hisobini o'chirib bo'lmaydi. Avval boshqa admin tayinlang.",
+      };
+    }
+  }
+
+  await getPrisma().user.delete({ where: { id: user.id } });
+
+  return { success: true };
+}
+
 export async function moderateAd(
   adId: string,
   action: "approve" | "reject"
@@ -239,6 +335,7 @@ export async function adminCreateCategory(formData: FormData) {
   const shortLabel = (formData.get("shortLabel") as string)?.trim();
   const emoji = (formData.get("emoji") as string)?.trim();
   const iconBg = (formData.get("iconBg") as string)?.trim();
+  const imageUrl = (formData.get("imageUrl") as string)?.trim() || null;
 
   if (!label || label.length < 2) {
     return { error: "Nom kamida 2 ta belgidan iborat bo'lishi kerak" };
@@ -253,6 +350,7 @@ export async function adminCreateCategory(formData: FormData) {
     shortLabel,
     emoji: emoji || "📦",
     iconBg: iconBg || "bg-blue-100",
+    imageUrl,
   });
 
   revalidatePath("/");

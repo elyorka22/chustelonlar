@@ -16,6 +16,7 @@ import {
   animateMarkerTap,
   setMarkerSelected,
 } from "@/lib/map-markers";
+import { MAP_INIT_OPTIONS, MAP_TILE_OPTIONS, MAP_TILE_URL } from "@/lib/map-config";
 import type { CategoryData, MapAdMarker } from "@/types";
 
 interface MapViewProps {
@@ -49,6 +50,7 @@ export function MapView({
     if (!mapRef.current || mapInstance.current) return;
 
     const map = L.map(mapRef.current, {
+      ...MAP_INIT_OPTIONS,
       center: [MAP_CENTER.lat, MAP_CENTER.lng],
       zoom: MAP_ZOOM,
       zoomControl: false,
@@ -56,10 +58,7 @@ export function MapView({
 
     L.control.zoom({ position: "topright" }).addTo(map);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }).addTo(map);
+    L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(map);
 
     const cluster = L.markerClusterGroup(createClusterGroupOptions());
 
@@ -230,6 +229,7 @@ export function MiniMap({
     if (!mapRef.current) return;
 
     const map = L.map(mapRef.current, {
+      ...MAP_INIT_OPTIONS,
       center: [latitude, longitude],
       zoom: 14,
       zoomControl: false,
@@ -237,10 +237,7 @@ export function MiniMap({
       scrollWheelZoom: false,
     });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "",
-      maxZoom: 19,
-    }).addTo(map);
+    L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(map);
 
     L.marker([latitude, longitude], {
       icon: createPlacementIcon(),

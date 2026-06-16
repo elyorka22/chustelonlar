@@ -79,6 +79,15 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Hide scrollbar */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -93,4 +102,8 @@ body {
 .leaflet-popup-content-wrapper {
   border-radius: 16px;
   box-shadow: var(--shadow-lg);
+}
+
+.leaflet-control-attribution {
+  display: none !important;
 }

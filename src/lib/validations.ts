@@ -66,5 +66,26 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const updateProfileSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Ism kamida 2 ta belgidan iborat bo'lishi kerak")
+    .max(100, "Ism 100 ta belgidan oshmasligi kerak"),
+});
+
+export const updatePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Joriy parolni kiriting"),
+    newPassword: z
+      .string()
+      .min(8, "Yangi parol kamida 8 ta belgidan iborat bo'lishi kerak")
+      .max(100),
+    confirmPassword: z.string().min(1, "Parolni tasdiqlang"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Parollar mos kelmadi",
+    path: ["confirmPassword"],
+  });
+
 export type CreateAdInput = z.infer<typeof createAdSchema>;
 export type AdFilterInput = z.infer<typeof adFilterSchema>;

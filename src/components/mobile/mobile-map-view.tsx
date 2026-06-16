@@ -14,6 +14,7 @@ import {
   animateMarkerTap,
   setMarkerSelected,
 } from "@/lib/map-markers";
+import { MAP_INIT_OPTIONS, MAP_TILE_OPTIONS, MAP_TILE_URL } from "@/lib/map-config";
 import { FilterChips } from "@/components/mobile/filter-chips";
 import { MapCard } from "@/components/mobile/map-card";
 import type { CategoryData, MapAdMarker } from "@/types";
@@ -82,6 +83,7 @@ export function MobileMapView({
     if (!mapRef.current || mapInstance.current) return;
 
     const map = L.map(mapRef.current, {
+      ...MAP_INIT_OPTIONS,
       center: [MAP_CENTER.lat, MAP_CENTER.lng],
       zoom: MAP_ZOOM,
       zoomControl: false,
@@ -89,10 +91,7 @@ export function MobileMapView({
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap",
-      maxZoom: 19,
-    }).addTo(map);
+    L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(map);
 
     const cluster = L.markerClusterGroup(createClusterGroupOptions());
 
@@ -166,6 +165,7 @@ export function MiniMap({
     if (!mapRef.current) return;
 
     const map = L.map(mapRef.current, {
+      ...MAP_INIT_OPTIONS,
       center: [latitude, longitude],
       zoom: 14,
       zoomControl: false,
@@ -173,9 +173,7 @@ export function MiniMap({
       scrollWheelZoom: false,
     });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-    }).addTo(map);
+    L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(map);
 
     L.marker([latitude, longitude], {
       icon: createPlacementIcon(),

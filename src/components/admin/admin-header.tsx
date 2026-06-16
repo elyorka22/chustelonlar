@@ -16,6 +16,7 @@ import {
   Settings,
   Tags,
   ChevronRight,
+  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -56,18 +57,29 @@ export function AdminHeader({ notificationCount = 0 }: AdminHeaderProps) {
           <span className="text-sm font-bold text-[#0F172A]">Chust E&apos;lon</span>
         </Link>
 
-        <button
-          type="button"
-          className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm"
-          aria-label="Bildirishnomalar"
-        >
-          <Bell className="h-5 w-5 text-[#0F172A]" />
-          {notificationCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#EF4444] px-1 text-[10px] font-bold text-white">
-              {notificationCount > 9 ? "9+" : notificationCount}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="flex h-10 items-center gap-1.5 rounded-2xl bg-white px-3 shadow-sm active:scale-95 transition-transform"
+            aria-label="Saytga o'tish"
+          >
+            <Home className="h-4 w-4 text-primary" />
+            <span className="text-xs font-bold text-[#0F172A]">Sayt</span>
+          </Link>
+
+          <button
+            type="button"
+            className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm"
+            aria-label="Bildirishnomalar"
+          >
+            <Bell className="h-5 w-5 text-[#0F172A]" />
+            {notificationCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#EF4444] px-1 text-[10px] font-bold text-white">
+                {notificationCount > 9 ? "9+" : notificationCount}
+              </span>
+            )}
+          </button>
+        </div>
       </header>
 
       <AnimatePresence>
@@ -133,9 +145,10 @@ export function AdminHeader({ notificationCount = 0 }: AdminHeaderProps) {
                 <Link
                   href="/"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center rounded-2xl bg-[#F8FAFC] py-3 text-sm font-semibold text-[#64748B]"
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-bold text-white"
                 >
-                  Saytga qaytish
+                  <Home className="h-4 w-4" />
+                  Saytga o&apos;tish
                 </Link>
               </div>
             </motion.aside>

@@ -5,6 +5,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "@/styles/map-markers.css";
 import { createPlacementIcon, setMarkerSelected } from "@/lib/map-markers";
+import { MAP_INIT_OPTIONS, MAP_TILE_OPTIONS, MAP_TILE_URL } from "@/lib/map-config";
 
 interface LocationPickerProps {
   lat: number;
@@ -21,14 +22,12 @@ export function LocationPicker({ lat, lng, onChange }: LocationPickerProps) {
     if (!mapRef.current || mapInstance.current) return;
 
     const map = L.map(mapRef.current, {
+      ...MAP_INIT_OPTIONS,
       center: [lat, lng],
       zoom: 14,
     });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap",
-      maxZoom: 19,
-    }).addTo(map);
+    L.tileLayer(MAP_TILE_URL, MAP_TILE_OPTIONS).addTo(map);
 
     const marker = L.marker([lat, lng], {
       icon: createPlacementIcon(),

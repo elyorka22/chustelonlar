@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Trash2, ImageIcon, Plus, X } from "lucide-react";
 import { AdminHeader } from "./admin-header";
+import { CategoryGridCard } from "@/components/mobile/category-grid-card";
 import {
   adminUpdateCategoryImage,
   adminRemoveCategoryImage,
@@ -23,6 +24,21 @@ interface AdminCategoriesClientProps {
   notificationCount: number;
 }
 
+async function uploadCategoryImage(file: File): Promise<string | null> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  const data = await res.json();
+
+  if (!res.ok) {
+    toast.error(data.error || "Yuklashda xatolik");
+    return null;
+  }
+
+  return data.fullUrl as string;
+}
+
 export function AdminCategoriesClient({
   categories: initialCategories,
   notificationCount,
@@ -30,40 +46,38 @@ export function AdminCategoriesClient({
   const [categories, setCategories] = useState(initialCategories);
   const [uploading, setUploading] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [createImagePreview, setCreateImagePreview] = useState<string | null>(null);
+  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     label: "",
     shortLabel: "",
     emoji: "📦",
     iconBg: "bg-blue-100",
   });
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const createFileRef = useRef<HTMLInputElement | null>(null);
 
   const handleUpload = async (slug: string, file: File) => {
     setUploading(slug);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Yuklashda xatolik");
+      const imageUrl = await uploadCategoryImage(file);
+      if (!imageUrl) {
         setUploading(null);
         return;
       }
 
       startTransition(async () => {
-        const result = await adminUpdateCategoryImage(slug, data.thumbUrl);
+        const result = await adminUpdateCategoryImage(slug, imageUrl);
         setUploading(null);
         if (result.error) {
           toast.error(result.error);
           return;
         }
         setCategories((prev) =>
-          prev.map((c) => (c.slug === slug ? { ...c, imageUrl: data.thumbUrl } : c))
+          prev.map((c) => (c.slug === slug ? { ...c, imageUrl } : c))
         );
-        toast.success("Rasm yangilandi");
+        toast.success("Karta rasmi yangilandi");
       });
     } catch {
       setUploading(null);
@@ -81,8 +95,20 @@ export function AdminCategoriesClient({
       setCategories((prev) =>
         prev.map((c) => (c.slug === slug ? { ...c, imageUrl: null } : c))
       );
-      toast.success("Standart ikonka qaytarildi");
+      toast.success("Emoji qaytarildi");
     });
+  };
+
+  const resetCreateForm = () => {
+    setForm({ label: "", shortLabel: "", emoji: "📦", iconBg: "bg-blue-100" });
+    setCreateImageFile(null);
+    setCreateImagePreview(null);
+    if (createFileRef.current) createFileRef.current.value = "";
+  };
+
+  const handleCreateImagePick = (file: File) => {
+    setCreateImageFile(file);
+    setCreateImagePreview(URL.createObjectURL(file));
   };
 
   const handleCreate = () => {
@@ -91,13 +117,23 @@ export function AdminCategoriesClient({
       return;
     }
 
-    const fd = new FormData();
-    fd.append("label", form.label);
-    fd.append("shortLabel", form.shortLabel);
-    fd.append("emoji", form.emoji);
-    fd.append("iconBg", form.iconBg);
-
     startTransition(async () => {
+      let imageUrl: string | null = null;
+
+      if (createImageFile) {
+        setUploading("new");
+        imageUrl = await uploadCategoryImage(createImageFile);
+        setUploading(null);
+        if (!imageUrl) return;
+      }
+
+      const fd = new FormData();
+      fd.append("label", form.label);
+      fd.append("shortLabel", form.shortLabel);
+      fd.append("emoji", form.emoji);
+      fd.append("iconBg", form.iconBg);
+      if (imageUrl) fd.append("imageUrl", imageUrl);
+
       const result = await adminCreateCategory(fd);
       if (result.error) {
         toast.error(result.error);
@@ -106,7 +142,7 @@ export function AdminCategoriesClient({
       if (result.category) {
         setCategories((prev) => [...prev, result.category!]);
       }
-      setForm({ label: "", shortLabel: "", emoji: "📦", iconBg: "bg-blue-100" });
+      resetCreateForm();
       setShowForm(false);
       toast.success("Kategoriya yaratildi");
     });
@@ -142,7 +178,7 @@ export function AdminCategoriesClient({
           <div>
             <h1 className="text-xl font-extrabold text-[#0F172A]">Kategoriyalar</h1>
             <p className="mt-0.5 text-sm text-[#64748B]">
-              {activeCategories.length} ta kategoriya
+              Bosh sahifa kartochkalariga rasm qo&apos;ying
             </p>
           </div>
           <motion.button
@@ -184,7 +220,58 @@ export function AdminCategoriesClient({
                 />
 
                 <div>
-                  <p className="mb-2 text-xs font-semibold text-[#64748B]">Emoji</p>
+                  <p className="mb-2 text-xs font-semibold text-[#64748B]">Karta ko&apos;rinishi</p>
+                  <CategoryGridCard
+                    label={form.label || "Kategoriya"}
+                    subtitle={form.shortLabel || "Qisqa nom"}
+                    href="#"
+                    emoji={form.emoji}
+                    imageUrl={createImagePreview}
+                    className="pointer-events-none max-w-[160px]"
+                  />
+                </div>
+
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-[#64748B]">Karta rasmi (ixtiyoriy)</p>
+                  <div className="flex gap-2">
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => createFileRef.current?.click()}
+                      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-primary/10 text-xs font-bold text-primary"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {createImageFile ? "Boshqasini tanlash" : "Rasm yuklash"}
+                    </motion.button>
+                    {createImageFile && (
+                      <motion.button
+                        type="button"
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          setCreateImageFile(null);
+                          setCreateImagePreview(null);
+                          if (createFileRef.current) createFileRef.current.value = "";
+                        }}
+                        className="flex h-11 items-center justify-center rounded-2xl bg-[#EF4444]/10 px-4 text-xs font-bold text-[#EF4444]"
+                      >
+                        Olib tashlash
+                      </motion.button>
+                    )}
+                  </div>
+                  <input
+                    ref={createFileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleCreateImagePick(file);
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-[#64748B]">Emoji (rasm bo&apos;lmasa)</p>
                   <div className="flex flex-wrap gap-2">
                     {CATEGORY_EMOJI_PRESETS.map((emoji) => (
                       <button
@@ -205,7 +292,7 @@ export function AdminCategoriesClient({
                 </div>
 
                 <div>
-                  <p className="mb-2 text-xs font-semibold text-[#64748B]">Rang</p>
+                  <p className="mb-2 text-xs font-semibold text-[#64748B]">Fon rangi</p>
                   <div className="flex flex-wrap gap-2">
                     {CATEGORY_ICON_BGS.map((bg) => (
                       <button
@@ -227,17 +314,18 @@ export function AdminCategoriesClient({
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.98 }}
+                  disabled={isPending || uploading === "new"}
                   onClick={handleCreate}
-                  className="flex h-12 w-full items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white"
+                  className="flex h-12 w-full items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white disabled:opacity-50"
                 >
-                  Kategoriya yaratish
+                  {uploading === "new" ? "Yuklanmoqda..." : "Kategoriya yaratish"}
                 </motion.button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-4">
           {activeCategories.map((cat, i) => {
             const isUploading = uploading === cat.slug;
 
@@ -249,37 +337,29 @@ export function AdminCategoriesClient({
                 transition={{ duration: 0.25, delay: i * 0.04 }}
                 className="rounded-[20px] bg-white p-4 shadow-[0_2px_16px_rgba(15,23,42,0.06)]"
               >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={cn(
-                      "relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl",
-                      cat.iconBg
-                    )}
-                  >
-                    {cat.imageUrl ? (
-                      <img
-                        src={cat.imageUrl}
-                        alt={cat.shortLabel}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-3xl">{cat.emoji}</span>
-                    )}
-                    {isUploading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-white/70">
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
                     <p className="font-bold text-[#0F172A]">{cat.label}</p>
-                    <p className="text-xs text-[#64748B]">{cat.shortLabel}</p>
-                    <p className="mt-1 text-[10px] text-[#94A3B8]">{cat.slug}</p>
+                    <p className="text-xs text-[#64748B]">{cat.slug}</p>
                   </div>
+                  {isUploading && (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  )}
                 </div>
 
-                <div className="mt-3 grid grid-cols-3 gap-2">
+                <p className="mb-2 text-xs font-semibold text-[#64748B]">
+                  Bosh sahifadagi ko&apos;rinishi
+                </p>
+                <CategoryGridCard
+                  label={cat.label}
+                  subtitle={cat.shortLabel}
+                  href={`/ads?category=${cat.slug}`}
+                  emoji={cat.emoji}
+                  imageUrl={cat.imageUrl}
+                  className="max-w-[180px]"
+                />
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
                   <motion.button
                     type="button"
                     whileTap={{ scale: 0.95 }}
@@ -288,7 +368,7 @@ export function AdminCategoriesClient({
                     className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-primary/10 text-xs font-bold text-primary disabled:opacity-50"
                   >
                     <Upload className="h-4 w-4" />
-                    Rasm
+                    {cat.imageUrl ? "Rasmni almashtirish" : "Rasm qo'shish"}
                   </motion.button>
 
                   {cat.imageUrl && (
@@ -300,7 +380,7 @@ export function AdminCategoriesClient({
                       className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#F59E0B]/10 text-xs font-bold text-[#F59E0B] disabled:opacity-50"
                     >
                       <ImageIcon className="h-4 w-4" />
-                      Emoji
+                      Emojiga qaytarish
                     </motion.button>
                   )}
 
@@ -308,7 +388,10 @@ export function AdminCategoriesClient({
                     type="button"
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleDelete(cat.slug, cat.label)}
-                    className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#EF4444]/10 text-xs font-bold text-[#EF4444]"
+                    className={cn(
+                      "flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#EF4444]/10 text-xs font-bold text-[#EF4444]",
+                      cat.imageUrl ? "" : "col-span-2"
+                    )}
                   >
                     <Trash2 className="h-4 w-4" />
                     O&apos;chirish
@@ -336,9 +419,9 @@ export function AdminCategoriesClient({
         <div className="mt-4 flex items-start gap-3 rounded-[20px] bg-primary/5 p-4">
           <ImageIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <p className="text-xs leading-relaxed text-[#64748B]">
-            Yangi kategoriya yaratgandan so&apos;ng u bosh sahifada va e&apos;lon
-            joylash formasida paydo bo&apos;ladi. E&apos;lonlari bo&apos;lgan
-            kategoriya o&apos;chirilganda yashiriladi.
+            PNG yoki WEBP formatidagi shaffof rasmlar yaxshi ko&apos;rinadi.
+            Rasm yuklamasangiz, emoji ko&apos;rsatiladi. O&apos;zgarishlar bosh
+            sahifada darhol paydo bo&apos;ladi.
           </p>
         </div>
       </motion.div>
