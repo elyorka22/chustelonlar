@@ -6,8 +6,12 @@ import bcrypt from "bcryptjs";
 import { getPrisma } from "@/lib/db";
 import type { UserRole } from "@prisma/client";
 
+const authUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
+  // Secure cookies only over HTTPS — otherwise session is lost after OAuth on HTTP/IP
+  useSecureCookies: authUrl.startsWith("https://"),
   adapter: PrismaAdapter(getPrisma()),
   session: { strategy: "jwt" },
   pages: {
@@ -18,6 +22,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
     Credentials({
       name: "credentials",
@@ -63,20 +68,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
+      if (user?.id) {
         token.id = user.id;
       }
 
-      if (token.id) {
-        const dbUser = await getPrisma().user.findUnique({
-          where: { id: token.id as string },
-          select: { role: true },
-        });
+      const userId = (token.id ?? token.sub) as string | undefined;
+      if (userId) {
+        token.id = userId;
 
-        if (dbUser) {
-          token.role = dbUser.role;
-        } else if (!token.role) {
-          token.role = "USER";
+        try {
+          const dbUser = await getPrisma().user.findUnique({
+            where: { id: userId },
+            select: { role: true },
+          });
+
+          if (dbUser) {
+            token.role = dbUser.role;
+          } else if (!token.role) {
+            token.role = "USER";
+          }
+        } catch {
+          token.role ??= "USER";
         }
       } else if (user) {
         token.role = (user as { role?: UserRole }).role ?? "USER";
@@ -86,7 +98,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = (token.id ?? token.sub) as string;
         session.user.role = (token.role as UserRole) ?? "USER";
       }
       return session;

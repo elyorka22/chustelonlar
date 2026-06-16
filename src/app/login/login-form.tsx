@@ -14,7 +14,9 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
 
-  const handleGoogleLogin = () => signIn("google", { callbackUrl: "/" });
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+
+  const handleGoogleLogin = () => signIn("google", { callbackUrl });
 
   const handleCredentialsLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ export default function LoginForm() {
     });
     setLoading(false);
     if (result?.error) { toast.error("Email yoki parol noto'g'ri"); return; }
-    router.push("/");
+    router.push(callbackUrl);
     router.refresh();
   };
 
