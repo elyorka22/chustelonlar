@@ -8,7 +8,7 @@ export default auth((request) => {
   const { pathname } = request.nextUrl;
   const session = request.auth;
 
-  const protectedRoutes = ["/create", "/dashboard"];
+  const protectedRoutes = ["/create", "/dashboard", "/chegirmalar/create"];
   const adminRoutes = ["/admin"];
 
   const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
@@ -35,6 +35,8 @@ export const config = {
   matcher: [
     "/create",
     "/create/:path*",
+    "/chegirmalar/create",
+    "/chegirmalar/create/:path*",
     "/dashboard",
     "/dashboard/:path*",
     "/admin",

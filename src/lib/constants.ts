@@ -57,7 +57,7 @@ export const PRIMARY_COLOR = "#2563EB";
 
 export const NAV_ITEMS = [
   { href: "/", label: "Bosh sahifa", icon: "home" },
-  { href: "/ads", label: "E'lonlar", icon: "grid" },
+  { href: "/chegirmalar", label: "Chegirmalar", icon: "tag" },
   { href: "/create", label: "E'lon joylash", icon: "plus", center: true },
   { href: "/map", label: "Xarita", icon: "map" },
   { href: "/dashboard", label: "Profil", icon: "user" },

@@ -12,7 +12,7 @@ export function DesktopHeader() {
           <span className="text-lg font-bold">{APP_NAME}</span>
         </Link>
         <nav className="flex items-center gap-6">
-          <Link href="/ads" className="text-sm font-medium text-gray-600 hover:text-primary">E&apos;lonlar</Link>
+          <Link href="/chegirmalar" className="text-sm font-medium text-gray-600 hover:text-primary">Chegirmalar</Link>
           <Link href="/map" className="text-sm font-medium text-gray-600 hover:text-primary">Xarita</Link>
           <Link href="/create" className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white">E&apos;lon joylash</Link>
           <Link href="/dashboard" className="text-sm font-medium text-gray-600 hover:text-primary">Profil</Link>

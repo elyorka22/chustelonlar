@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, type ReactNode } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ImageIcon, Plus, Trash2, Upload } from "lucide-react";
@@ -69,6 +69,60 @@ async function uploadBannerImage(file: File): Promise<string | null> {
   }
 
   return data.fullUrl as string;
+}
+
+function BannerPreview({
+  title,
+  subtitle,
+  bgClass,
+  imageUrl,
+  unoptimized = false,
+  className,
+  badge,
+}: {
+  title: string;
+  subtitle: string;
+  bgClass: string;
+  imageUrl: string | null;
+  unoptimized?: boolean;
+  className?: string;
+  badge?: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative min-h-[112px] overflow-hidden rounded-[18px]",
+        className
+      )}
+    >
+      {imageUrl ? (
+        <>
+          <Image
+            src={imageUrl}
+            alt=""
+            fill
+            className="object-cover"
+            sizes="400px"
+            unoptimized={unoptimized}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20" />
+        </>
+      ) : (
+        <div className={cn("absolute inset-0 bg-gradient-to-br", bgClass)} />
+      )}
+
+      <div className="relative z-10 px-4 py-4">
+        <p className="max-w-[75%] text-[14px] font-extrabold leading-snug text-white drop-shadow-sm">
+          {title}
+        </p>
+        <p className="mt-0.5 max-w-[75%] text-[11px] font-medium text-white/90 drop-shadow-sm">
+          {subtitle}
+        </p>
+      </div>
+
+      {badge}
+    </div>
+  );
 }
 
 export function AdminBannersClient({
@@ -345,34 +399,16 @@ export function AdminBannersClient({
 
               <div>
                 <span className="text-[12px] font-semibold text-[#64748B]">
-                  Banner rasmi (ixtiyoriy)
+                  Banner rasmi (butun fon)
                 </span>
-                <div
-                  className={cn(
-                    "relative mt-2 overflow-hidden rounded-[18px] bg-gradient-to-br px-4 py-4",
-                    draft.bgClass
-                  )}
-                >
-                  <div className="relative z-10 max-w-[65%]">
-                    <p className="text-[14px] font-extrabold text-white">
-                      {draft.title || "Sarlavha"}
-                    </p>
-                    <p className="text-[11px] font-medium text-white/80">
-                      {draft.subtitle || "Qisqa matn"}
-                    </p>
-                  </div>
-                  {previewUrl ? (
-                    <div className="absolute bottom-0 right-2 h-20 w-20 overflow-hidden rounded-t-xl">
-                      <Image
-                        src={previewUrl}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                        unoptimized={!!imagePreview}
-                      />
-                    </div>
-                  ) : null}
+                <div className="mt-2">
+                  <BannerPreview
+                    title={draft.title || "Sarlavha"}
+                    subtitle={draft.subtitle || "Qisqa matn"}
+                    bgClass={draft.bgClass}
+                    imageUrl={previewUrl}
+                    unoptimized={!!imagePreview}
+                  />
                 </div>
 
                 <div className="mt-3 flex gap-2">
@@ -446,39 +482,24 @@ export function AdminBannersClient({
               key={banner.id}
               className="overflow-hidden rounded-[22px] bg-white shadow-[0_2px_16px_rgba(15,23,42,0.06)]"
             >
-              <div
-                className={cn(
-                  "relative h-28 bg-gradient-to-br px-4 py-4",
-                  banner.bgClass
-                )}
-              >
-                <div className="relative z-10 max-w-[65%]">
-                  <p className="text-[16px] font-extrabold leading-snug text-white">
-                    {banner.title}
-                  </p>
-                  <p className="mt-0.5 text-[12px] font-medium text-white/80">{banner.subtitle}</p>
-                </div>
-                {banner.imageUrl ? (
-                  <div className="absolute bottom-0 right-2 h-24 w-24 overflow-hidden rounded-t-xl">
-                    <Image
-                      src={banner.imageUrl}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="96px"
-                    />
-                  </div>
-                ) : (
-                  <div className="absolute bottom-2 right-2 flex h-16 w-16 items-center justify-center rounded-xl bg-white/10 text-white/50">
-                    <ImageIcon className="h-6 w-6" />
-                  </div>
-                )}
-                {!banner.isActive && (
-                  <span className="absolute left-3 top-3 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-bold text-white">
-                    Yashirin
-                  </span>
-                )}
-              </div>
+              <BannerPreview
+                title={banner.title}
+                subtitle={banner.subtitle}
+                bgClass={banner.bgClass}
+                imageUrl={banner.imageUrl}
+                className="min-h-[112px] rounded-none"
+                badge={
+                  !banner.isActive ? (
+                    <span className="absolute left-3 top-3 z-20 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-bold text-white">
+                      Yashirin
+                    </span>
+                  ) : !banner.imageUrl ? (
+                    <div className="absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white/50">
+                      <ImageIcon className="h-5 w-5" />
+                    </div>
+                  ) : null
+                }
+              />
 
               <div className="flex flex-wrap items-center gap-2 p-3">
                 <input

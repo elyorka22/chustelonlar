@@ -16,6 +16,7 @@ import {
   LogOut,
   Coins,
   Image as ImageIcon,
+  Percent,
 } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { SettingsRow } from "./settings-row";
@@ -34,6 +35,7 @@ export function AdminSettingsClient({
         { icon: Info, title: "Umumiy ma'lumot", subtitle: "Platforma sozlamalari" },
         { icon: Tags, title: "Kategoriyalar", subtitle: "E'lon toifalari", href: "/admin/categories" },
         { icon: ImageIcon, title: "Bannerlar", subtitle: "Bosh sahifa karuseli", href: "/admin/banners" },
+        { icon: Percent, title: "Chegirmalar", subtitle: "Biznes aksiyalari", href: "/admin/chegirmalar" },
         { icon: Coins, title: "Monetka", subtitle: "Balans va narxlar", href: "/admin/monetization" },
         { icon: MapPin, title: "Hududlar", subtitle: "Chust tumanlari" },
         { icon: FileText, title: "E'lon sozlamalari", subtitle: "Moderatsiya qoidalari" },

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, Map, User, Plus } from "lucide-react";
+import { Home, Tag, Map, User, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const navItems = [
   { href: "/", label: "Bosh sahifa", icon: Home },
-  { href: "/ads", label: "E'lonlar", icon: LayoutGrid },
+  { href: "/chegirmalar", label: "Chegirmalar", icon: Tag },
   { href: "/create", label: "", icon: Plus, center: true },
   { href: "/map", label: "Xarita", icon: Map },
   { href: "/dashboard", label: "Profil", icon: User },

@@ -71,6 +71,38 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const createChegirmaSchema = z.object({
+  businessName: z
+    .string()
+    .min(2, "Do'kon nomi kamida 2 ta belgidan iborat bo'lishi kerak")
+    .max(100),
+  title: z
+    .string()
+    .min(5, "Aksiya sarlavhasi kamida 5 ta belgidan iborat bo'lishi kerak")
+    .max(120),
+  description: z
+    .string()
+    .min(10, "Tavsif kamida 10 ta belgidan iborat bo'lishi kerak")
+    .max(2000),
+  discountLabel: z
+    .string()
+    .min(2, "Chegirma belgisini kiriting (masalan: -30%)")
+    .max(50),
+  category: z.enum(["food", "clothing", "tech", "beauty", "services", "other"]),
+  imageUrl: z.string().min(1, "Banner rasmini yuklang"),
+  latitude: z.number().min(40.9).max(41.2),
+  longitude: z.number().min(71.1).max(71.4),
+  district: z.string().min(2).max(100),
+  address: z.string().max(200).optional(),
+  phone: z.string().min(9).max(20),
+  telegram: z.string().max(32).optional(),
+  validUntil: z.coerce.date().refine((d) => d > new Date(), {
+    message: "Tugash sanasi kelajakda bo'lishi kerak",
+  }),
+});
+
+export type CreateChegirmaInput = z.infer<typeof createChegirmaSchema>;
+
 export const updateProfileSchema = z.object({
   name: z
     .string()

@@ -102,6 +102,43 @@ export interface PromoBannerData {
   isActive: boolean;
 }
 
+export interface ChegirmaData {
+  id: string;
+  businessName: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  discountLabel: string;
+  category: string;
+  latitude: number;
+  longitude: number;
+  district: string;
+  address: string | null;
+  phone: string;
+  telegram: string | null;
+  validUntil: Date;
+  status: string;
+  views: number;
+  createdAt: Date;
+  createdBy?: {
+    id: string;
+    name: string | null;
+  };
+}
+
+export interface MapChegirmaMarker {
+  id: string;
+  title: string;
+  businessName: string;
+  discountLabel: string;
+  imageUrl: string;
+  thumbUrl: string;
+  latitude: number;
+  longitude: number;
+  district: string;
+  validUntil: Date;
+}
+
 export interface UserDashboardStats {
   wallet: {
     coinBalance: number;

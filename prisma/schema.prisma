@@ -35,6 +35,14 @@ enum CoinTransactionType {
   AD_PROMOTION
 }
 
+enum ChegirmaStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  DELETED
+}
+
 model Category {
   slug            String              @id
   label           String
@@ -72,6 +80,36 @@ model PromoBanner {
   @@map("promo_banners")
 }
 
+model Chegirma {
+  id              String         @id @default(cuid())
+  businessName    String         @map("business_name")
+  title           String
+  description     String         @db.Text
+  imageUrl        String         @map("image_url")
+  discountLabel   String         @map("discount_label")
+  category        String         @default("other")
+  latitude        Float
+  longitude       Float
+  district        String
+  address         String?
+  phone           String
+  telegram        String?
+  validUntil      DateTime       @map("valid_until")
+  status          ChegirmaStatus @default(PENDING)
+  listingCoinCost Int            @default(0) @map("listing_coin_cost")
+  views           Int            @default(0)
+  createdById     String         @map("created_by_id")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([status, validUntil])
+  @@index([category])
+  @@index([district])
+  @@map("chegirmalar")
+}
+
 model User {
   id                  String    @id @default(cuid())
   name                String?
@@ -93,6 +131,7 @@ model User {
   reports           Report[]
   pushSubscriptions PushSubscription[]
   coinTransactions  CoinTransaction[]
+  chegirmalar       Chegirma[]
 
   @@map("users")
 }
@@ -152,6 +191,7 @@ model MonetizationSettings {
   topDurationDays      Int      @default(7) @map("top_duration_days")
   vipDurationDays      Int      @default(7) @map("vip_duration_days")
   urgentDurationDays   Int      @default(7) @map("urgent_duration_days")
+  chegirmaListingCost Int     @default(2) @map("chegirma_listing_cost")
   contactTelegram      String?  @map("contact_telegram")
   contactPhone         String?  @map("contact_phone")
   contactWhatsapp      String?  @map("contact_whatsapp")

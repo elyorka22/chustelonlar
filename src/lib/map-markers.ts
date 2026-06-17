@@ -48,6 +48,34 @@ export function createClusterIcon(count: number): L.DivIcon {
   });
 }
 
+/** Оранжевый цвет для маркеров акций */
+const CHEGIRMA_ORANGE = {
+  outer: "rgba(249, 115, 22, 0.25)",
+  inner: "#EA580C",
+  gradient: "linear-gradient(135deg, #FB923C, #EA580C)",
+};
+
+export function createChegirmaCircleIcon(selected = false): L.DivIcon {
+  const size = selected ? 32 : 24;
+  const innerSize = selected ? 14 : 12;
+  const shadow = selected ? "box-shadow:0 4px 16px rgba(234,88,12,.4);" : "";
+
+  const html = `<div class="chust-single-circle${selected ? " chust-single-circle--selected" : ""}" style="${circleBox(size)}display:flex;align-items:center;justify-content:center;background:${CHEGIRMA_ORANGE.outer};${shadow}cursor:pointer;">
+    <div class="chust-inner-circle" style="${circleBox(innerSize)}background:${CHEGIRMA_ORANGE.inner};"></div>
+  </div>`;
+
+  return L.divIcon({
+    html,
+    className: "chust-single-marker",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+export function setChegirmaMarkerSelected(marker: L.Marker, selected: boolean): void {
+  marker.setIcon(createChegirmaCircleIcon(selected));
+}
+
 export function createSingleCircleIcon(selected = false): L.DivIcon {
   const size = selected ? 32 : 24;
   const innerSize = selected ? 14 : 12;

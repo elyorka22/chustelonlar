@@ -55,3 +55,21 @@ export const getCachedPromoBanners = unstable_cache(
   ["cached-promo-banners"],
   { revalidate: 120, tags: [CACHE_TAGS.banners] }
 );
+
+export const getCachedChegirmalar = unstable_cache(
+  async (category = "") => {
+    const { getActiveChegirmalar } = await import("@/lib/services/chegirmalar");
+    return getActiveChegirmalar(category || undefined);
+  },
+  ["cached-chegirmalar"],
+  { revalidate: 60, tags: [CACHE_TAGS.chegirmalar] }
+);
+
+export const getCachedMapChegirmalar = unstable_cache(
+  async (category = "") => {
+    const { getMapChegirmalar } = await import("@/lib/services/chegirmalar");
+    return getMapChegirmalar(category || undefined);
+  },
+  ["cached-map-chegirmalar"],
+  { revalidate: 60, tags: [CACHE_TAGS.chegirmalar] }
+);

@@ -12,7 +12,7 @@ import {
   createReport,
   updateAdStatus,
 } from "@/lib/services/ads";
-import type { CreateAdInput } from "@/lib/validations";
+import type { CreateAdInput, CreateChegirmaInput } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
 
 export async function registerUser(formData: FormData) {
@@ -760,5 +760,137 @@ export async function adminDeletePromoBanner(id: string) {
     return { success: true };
   } catch {
     return { error: "Banner topilmadi" };
+  }
+}
+
+function revalidateChegirmaPaths() {
+  revalidatePath("/chegirmalar");
+  revalidatePath("/admin/chegirmalar");
+}
+
+export async function submitChegirma(input: CreateChegirmaInput) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  try {
+    const { createChegirma, afterChegirmaMutation } = await import(
+      "@/lib/services/chegirmalar"
+    );
+    const chegirma = await createChegirma(session.user.id, input);
+    await afterChegirmaMutation();
+    const { revalidateTag } = await import("next/cache");
+    revalidateTag("chegirmalar", "max");
+    revalidateChegirmaPaths();
+    revalidatePath("/dashboard");
+    return { success: true, chegirmaId: chegirma.id };
+  } catch (error) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_COINS") {
+      const { getChegirmaListingCost, getContactLinks } = await import(
+        "@/lib/services/monetization"
+      );
+      const { getUserCoinWallet } = await import("@/lib/services/coins");
+      const [required, wallet, contact] = await Promise.all([
+        getChegirmaListingCost(),
+        getUserCoinWallet(session.user.id),
+        getContactLinks(),
+      ]);
+      return {
+        error: "Hisobingizda monetka yetarli emas",
+        code: "INSUFFICIENT_COINS" as const,
+        balance: wallet.coinBalance,
+        required,
+        contact,
+      };
+    }
+    if (error instanceof ZodError) {
+      return { error: error.issues[0]?.message ?? "Ma'lumotlar noto'g'ri" };
+    }
+    return { error: "Aksiya yaratishda xatolik yuz berdi" };
+  }
+}
+
+export async function getChegirmaCostPreview() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  const { getChegirmaListingCost } = await import("@/lib/services/monetization");
+  const { getUserCoinWallet } = await import("@/lib/services/coins");
+
+  const [required, wallet] = await Promise.all([
+    getChegirmaListingCost(),
+    getUserCoinWallet(session.user.id),
+  ]);
+
+  return { success: true, required, balance: wallet.coinBalance };
+}
+
+export async function moderateChegirma(
+  id: string,
+  action: "approve" | "reject"
+) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const item = await getPrisma().chegirma.findUnique({
+    where: { id },
+    select: { title: true, createdById: true },
+  });
+
+  if (!item) {
+    return { error: "Aksiya topilmadi" };
+  }
+
+  const { updateChegirmaStatus, afterChegirmaMutation } = await import(
+    "@/lib/services/chegirmalar"
+  );
+  const status = action === "approve" ? "APPROVED" : "REJECTED";
+  await updateChegirmaStatus(id, status);
+  await afterChegirmaMutation();
+
+  const { sendPushToUser } = await import("@/lib/services/push-subscriptions");
+  void sendPushToUser(item.createdById, {
+    title:
+      action === "approve"
+        ? "Aksiyangiz tasdiqlandi"
+        : "Aksiyangiz rad etildi",
+    body:
+      action === "approve"
+        ? `"${item.title}" endi Chegirmalar bo'limida ko'rinadi`
+        : `"${item.title}" — qayta tahrir qilishingiz mumkin`,
+    url: action === "approve" ? `/chegirmalar/${id}` : "/dashboard",
+  });
+
+  const { revalidateTag } = await import("next/cache");
+  revalidateTag("chegirmalar", "max");
+  revalidateChegirmaPaths();
+  revalidatePath("/admin");
+  return { success: true };
+}
+
+export async function adminDeleteChegirma(id: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { deleteChegirma, afterChegirmaMutation } = await import(
+    "@/lib/services/chegirmalar"
+  );
+
+  try {
+    await deleteChegirma(id);
+    await afterChegirmaMutation();
+    const { revalidateTag } = await import("next/cache");
+    revalidateTag("chegirmalar", "max");
+    revalidateChegirmaPaths();
+    return { success: true };
+  } catch {
+    return { error: "Aksiya topilmadi" };
   }
 }

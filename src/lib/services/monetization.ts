@@ -150,6 +150,11 @@ export async function getContactLinks() {
   };
 }
 
+export async function getChegirmaListingCost(): Promise<number> {
+  const settings = await getMonetizationSettings();
+  return settings.chegirmaListingCost;
+}
+
 export const COIN_TYPE_LABELS: Record<CoinTransactionType, string> = {
   TOPUP: "TOPUP",
   SPEND: "SPEND",

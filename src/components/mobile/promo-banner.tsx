@@ -30,16 +30,31 @@ export function PromoBanner({ banners }: PromoBannerProps) {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -12 }}
           transition={{ duration: 0.25 }}
-          className={cn(
-            "relative overflow-hidden rounded-[22px] bg-gradient-to-br px-5 py-5 shadow-lg shadow-black/10",
-            slide.bgClass
-          )}
+          className="relative min-h-[136px] overflow-hidden rounded-[22px] shadow-lg shadow-black/10"
         >
-          <div className="relative z-10 max-w-[62%]">
-            <p className="text-[18px] font-extrabold leading-snug text-white">
+          {slide.imageUrl ? (
+            <>
+              <Image
+                src={slide.imageUrl}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 672px"
+                priority={active === 0}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20" />
+            </>
+          ) : (
+            <div
+              className={cn("absolute inset-0 bg-gradient-to-br", slide.bgClass)}
+            />
+          )}
+
+          <div className="relative z-10 px-5 py-5">
+            <p className="max-w-[75%] text-[18px] font-extrabold leading-snug text-white drop-shadow-sm">
               {slide.title}
             </p>
-            <p className="mt-1 text-[13px] font-medium text-white/80">
+            <p className="mt-1 max-w-[75%] text-[13px] font-medium text-white/90 drop-shadow-sm">
               {slide.subtitle}
             </p>
             <Link
@@ -49,18 +64,6 @@ export function PromoBanner({ banners }: PromoBannerProps) {
               {slide.ctaLabel} →
             </Link>
           </div>
-
-          {slide.imageUrl ? (
-            <div className="pointer-events-none absolute -bottom-1 right-0 h-28 w-28 overflow-hidden rounded-tl-2xl">
-              <Image
-                src={slide.imageUrl}
-                alt=""
-                fill
-                className="object-cover drop-shadow-lg"
-                sizes="112px"
-              />
-            </div>
-          ) : null}
         </motion.div>
       </AnimatePresence>
 

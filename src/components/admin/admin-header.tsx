@@ -19,6 +19,7 @@ import {
   Home,
   Image,
   Coins,
+  Percent,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ const menuItems = [
   { href: "/admin/ads", label: "E'lonlar", icon: FileText },
   { href: "/admin/categories", label: "Kategoriyalar", icon: Tags },
   { href: "/admin/banners", label: "Bannerlar", icon: Image },
+  { href: "/admin/chegirmalar", label: "Chegirmalar", icon: Percent },
   { href: "/admin/monetization", label: "Monetka", icon: Coins },
   { href: "/admin/users", label: "Foydalanuvchilar", icon: Users },
   { href: "/admin/analytics", label: "Statistika", icon: BarChart3 },

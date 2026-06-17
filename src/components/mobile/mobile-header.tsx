@@ -98,7 +98,7 @@ export function MobileHeader({
               </div>
               {[
                 { href: "/", label: "Bosh sahifa" },
-                { href: "/ads", label: "E'lonlar" },
+                { href: "/chegirmalar", label: "Chegirmalar" },
                 { href: "/map", label: "Xarita" },
                 { href: "/create", label: "E'lon joylash" },
                 { href: "/dashboard", label: "Profil" },
