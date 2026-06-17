@@ -10,7 +10,10 @@ export const createAdSchema = z.object({
     .string()
     .min(20, "Tavsif kamida 20 ta belgidan iborat bo'lishi kerak")
     .max(5000, "Tavsif 5000 ta belgidan oshmasligi kerak"),
-  category: z.string().min(1).max(50),
+  category: z
+    .string()
+    .min(1, "Kategoriyani tanlang")
+    .max(50, "Kategoriya noto'g'ri"),
   price: z
     .number()
     .min(0, "Narx manfiy bo'lishi mumkin emas")

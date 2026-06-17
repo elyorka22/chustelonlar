@@ -102,9 +102,12 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
     }
   }, []);
 
+  const hasValidCategory = Boolean(form.category && selectedCategory);
+
   const canProceed = () => {
     if (step === 1) {
-      if (!form.title || !form.description || !form.category || !form.district || !form.phone) {
+      if (!hasValidCategory) return false;
+      if (!form.title || !form.description || !form.district || !form.phone) {
         return false;
       }
       if (!form.negotiable && !form.price) return false;
@@ -112,11 +115,11 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
       return validateCategoryExtras(categoryConfig, categoryExtras) === null;
     }
     if (step === 2) return images.length > 0;
-    return true;
+    return hasValidCategory;
   };
 
   const handleNextStep = () => {
-    if (!form.category) {
+    if (!hasValidCategory) {
       toast.error("Kategoriyani tanlang");
       return;
     }
@@ -137,6 +140,11 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
   };
 
   const handleSubmit = async () => {
+    if (!hasValidCategory) {
+      toast.error("Kategoriyani tanlang");
+      setStep(1);
+      return;
+    }
     if (!categoryConfig) return;
 
     setLoading(true);
@@ -205,11 +213,14 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4"
             >
-              {/* Category picker */}
+              {/* Category picker — required before other fields */}
               <div>
                 <label className="mb-2 block text-[13px] font-semibold text-gray-700">
-                  Kategoriya
+                  Kategoriya <span className="text-red-500">*</span>
                 </label>
+                <p className="mb-3 text-[12px] text-gray-500">
+                  E&apos;lon joylash uchun avval kategoriyani tanlang
+                </p>
                 <div className="grid grid-cols-2 gap-2">
                   {categories.map((cat) => {
                     const active = form.category === cat.slug;
@@ -235,7 +246,7 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
                 </div>
               </div>
 
-              {categoryConfig && selectedCategory && (
+              {hasValidCategory && categoryConfig && selectedCategory && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -280,6 +291,8 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
                 </motion.div>
               )}
 
+              {hasValidCategory && (
+              <>
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-gray-700">
                   Sarlavha
@@ -372,6 +385,8 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
                   className={inputClass}
                 />
               </div>
+              </>
+              )}
             </motion.div>
           )}
 

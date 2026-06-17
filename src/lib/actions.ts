@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { registerSchema } from "@/lib/validations";
+import { ZodError } from "zod";
 import {
   createAd,
   deleteAd,
@@ -59,6 +60,12 @@ export async function submitAd(input: CreateAdInput) {
     return { success: true, adId: ad.id };
   } catch (error) {
     console.error("Submit ad error:", error);
+    if (error instanceof Error && error.message === "Noto'g'ri kategoriya") {
+      return { error: "Kategoriyani tanlang" };
+    }
+    if (error instanceof ZodError) {
+      return { error: error.issues[0]?.message ?? "Ma'lumotlar noto'g'ri" };
+    }
     return { error: "E'lon yaratishda xatolik yuz berdi" };
   }
 }

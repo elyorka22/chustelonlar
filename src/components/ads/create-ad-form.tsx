@@ -126,6 +126,11 @@ export function CreateAdForm() {
       return;
     }
 
+    if (!form.category) {
+      toast.error("Kategoriyani tanlang");
+      return;
+    }
+
     setLoading(true);
 
     const result = await submitAd({
