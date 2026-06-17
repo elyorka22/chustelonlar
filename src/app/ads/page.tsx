@@ -1,11 +1,8 @@
 import { getAds } from "@/lib/services/ads";
-import {
-  getCachedActiveCategories,
-  PUBLIC_PAGE_REVALIDATE,
-} from "@/lib/cached-data";
+import { getCachedActiveCategories } from "@/lib/cached-data";
 import { AdsListingClient } from "@/components/mobile/ads-listing-client";
 
-export const revalidate = PUBLIC_PAGE_REVALIDATE;
+export const revalidate = 60;
 
 interface AdsPageProps {
   searchParams: Promise<Record<string, string | undefined>>;

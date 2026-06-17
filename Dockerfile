@@ -18,6 +18,8 @@ RUN npx prisma generate
 # Build must not connect to runtime Docker services (postgres/redis).
 RUN DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build?schema=public" \
     REDIS_URL="" \
+    SPACES_BUCKET="build" \
+    SPACES_ENDPOINT="https://build.example.com" \
     npm run build
 
 # Migrate stage — full production node_modules for Prisma CLI (migrate deploy)

@@ -3,13 +3,12 @@ import { getSimilarAds, incrementAdViews, isFavorited } from "@/lib/services/ads
 import {
   getCachedAdById,
   getCachedActiveCategories,
-  PUBLIC_PAGE_REVALIDATE,
 } from "@/lib/cached-data";
 import { auth } from "@/lib/auth";
 import { AdDetailMobile } from "@/components/mobile/ad-detail-mobile";
 import type { Metadata } from "next";
 
-export const revalidate = PUBLIC_PAGE_REVALIDATE;
+export const revalidate = 60;
 
 interface AdPageProps {
   params: Promise<{ id: string }>;

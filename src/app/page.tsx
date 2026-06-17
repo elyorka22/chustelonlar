@@ -7,7 +7,6 @@ import { AdCardHorizontal } from "@/components/mobile/ad-card-horizontal";
 import { AdCardGrid } from "@/components/mobile/ad-card-grid";
 import { getUserFavoriteIds } from "@/lib/services/ads";
 import {
-  PUBLIC_PAGE_REVALIDATE,
   getCachedActiveCategories,
   getCachedLatestAds,
   getCachedHomeAdsGrid,
@@ -15,7 +14,7 @@ import {
 import { auth } from "@/lib/auth";
 import { AdGridSkeleton } from "@/components/mobile/shimmer";
 
-export const revalidate = PUBLIC_PAGE_REVALIDATE;
+export const revalidate = 60;
 
 export default async function HomePage() {
   let latestAds: Awaited<ReturnType<typeof getCachedLatestAds>> = [];

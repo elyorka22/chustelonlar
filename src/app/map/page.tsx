@@ -1,11 +1,10 @@
 import {
   getCachedActiveCategories,
   getCachedMapAds,
-  PUBLIC_PAGE_REVALIDATE,
 } from "@/lib/cached-data";
 import { MapPageClient } from "./map-page-client";
 
-export const revalidate = PUBLIC_PAGE_REVALIDATE;
+export const revalidate = 60;
 
 export default async function MapPage() {
   let initialAds: Awaited<ReturnType<typeof getCachedMapAds>> = [];

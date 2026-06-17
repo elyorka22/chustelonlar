@@ -1,8 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-invalidate";
 
-export const PUBLIC_PAGE_REVALIDATE = 60;
-
 export const getCachedActiveCategories = unstable_cache(
   async () => {
     const { getActiveCategories } = await import("@/lib/services/categories");
