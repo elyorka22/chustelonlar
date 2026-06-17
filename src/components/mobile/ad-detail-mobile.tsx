@@ -10,6 +10,7 @@ import {
   Share2,
   Flag,
   MapPin,
+  TriangleAlert,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { MobileHeader } from "@/components/mobile/mobile-header";
@@ -49,6 +50,7 @@ export function AdDetailMobile({
   const [favorited, setFavorited] = useState(initialFavorited);
   const [reportReason, setReportReason] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
+  const [warningOpen, setWarningOpen] = useState(false);
 
   const category = findCategory(categories, ad.category);
 
@@ -184,12 +186,6 @@ export function AdDetailMobile({
               <Phone className="h-4 w-4" />
               Qo&apos;ng&apos;iroq
             </a>
-            <a
-              href={`tel:${ad.phone}`}
-              className="text-[14px] font-semibold text-gray-900"
-            >
-              {ad.phone}
-            </a>
             {ad.telegram && (
               <a
                 href={`https://t.me/${ad.telegram}`}
@@ -201,6 +197,43 @@ export function AdDetailMobile({
                 Telegram
               </a>
             )}
+            <DialogRoot open={warningOpen} onOpenChange={setWarningOpen}>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 text-[13px] font-medium text-amber-800 transition-transform active:scale-[0.98]"
+                >
+                  <TriangleAlert className="h-4 w-4" />
+                  Ogohlantirish
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogTitle className="flex items-center gap-2 text-amber-800">
+                  <span aria-hidden>⚠️</span>
+                  Xavfsizlik ogohlantirishi
+                </DialogTitle>
+                <div className="mt-4 space-y-3 text-[14px] leading-relaxed text-gray-600">
+                  <p>
+                    Hech kimga oldindan pul o&apos;tkazmang va noma&apos;lum shaxslarga to&apos;lov
+                    qilmang. Xarid, sotuv va pul bilan bog&apos;liq barcha amallarni faqat shaxsan
+                    uchrashib, mahsulotni tekshirgandan so&apos;ng amalga oshirishingizni tavsiya
+                    qilamiz.
+                  </p>
+                  <p>
+                    chust-elonlar.uz faqat e&apos;lon joylashtirish platformasi hisoblanadi va
+                    foydalanuvchilar o&apos;rtasidagi kelishuvlar, to&apos;lovlar yoki yuzaga kelishi
+                    mumkin bo&apos;lgan nizolar uchun javobgar emas.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWarningOpen(false)}
+                  className="mt-5 h-11 w-full rounded-2xl bg-amber-500 text-sm font-bold text-white"
+                >
+                  Tushundim
+                </button>
+              </DialogContent>
+            </DialogRoot>
             <DialogRoot open={reportOpen} onOpenChange={setReportOpen}>
               <DialogTrigger asChild>
                 <button className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 text-[13px] font-medium text-gray-600 transition-transform active:scale-[0.98]">

@@ -1,0 +1,2 @@
+ALTER TABLE "ads" ADD COLUMN IF NOT EXISTS "is_paused" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "monetization_settings" ADD COLUMN IF NOT EXISTS "renew_listing_cost" INTEGER NOT NULL DEFAULT 1;

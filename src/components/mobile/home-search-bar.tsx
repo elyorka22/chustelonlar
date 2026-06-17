@@ -1,41 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import { SlidersHorizontal } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { PwaInstallButton } from "@/components/pwa/pwa-install-button";
+import { AdsFilterButton } from "@/components/mobile/ads-filter-sheet";
+import { SearchBar } from "@/components/mobile/search-bar";
+import type { CategoryData } from "@/types";
 
-export function HomeSearchBar() {
-  const router = useRouter();
-  const [query, setQuery] = useState("");
+interface HomeSearchBarProps {
+  categories: CategoryData[];
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (query) params.set("search", query);
-    router.push(`/ads?${params.toString()}`);
-  };
-
+export function HomeSearchBar({ categories }: HomeSearchBarProps) {
   return (
     <div className="flex items-center gap-2.5">
-      <Link
-        href="/ads"
-        className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-secondary active:scale-95 transition-transform"
-        aria-label="Filtrlar"
-      >
-        <SlidersHorizontal className="h-5 w-5 text-gray-700" strokeWidth={2.2} />
-      </Link>
+      <AdsFilterButton categories={categories} initialFilters={{}} preserveSearch={false} />
 
-      <form onSubmit={handleSubmit} className="relative min-w-0 flex-1">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Qidirish..."
-          className="h-[52px] w-full rounded-2xl bg-secondary px-4 text-[15px] font-medium text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-primary/20"
-        />
-      </form>
+      <SearchBar className="min-w-0 flex-1" action="/ads" />
 
       <PwaInstallButton />
     </div>

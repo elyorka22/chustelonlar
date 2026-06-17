@@ -12,6 +12,7 @@ export { isPromotionActive };
 function buildWhereClause(filters: AdFilterInput): Prisma.AdWhereInput {
   const where: Prisma.AdWhereInput = {
     status: "APPROVED",
+    isPaused: false,
   };
 
   if (filters.search) {
@@ -114,12 +115,20 @@ export async function getAds(
 }
 
 export async function getAdById(id: string): Promise<AdWithImages | null> {
+  const cacheKey = `ads:detail:${id}`;
+  const cached = await cacheGet<AdWithImages>(cacheKey);
+  if (cached) return cached;
+
   const ad = await getPrisma().ad.findUnique({
     where: { id },
     include: adInclude,
   });
 
-  return ad as AdWithImages | null;
+  const result = ad as AdWithImages | null;
+  if (result?.status === "APPROVED" && !result.isPaused) {
+    await cacheSet(cacheKey, result, 90);
+  }
+  return result;
 }
 
 export async function incrementAdViews(id: string): Promise<void> {
@@ -132,7 +141,11 @@ export async function incrementAdViews(id: string): Promise<void> {
 export async function getMapAds(
   category?: string
 ): Promise<MapAdMarker[]> {
-  const where: Prisma.AdWhereInput = { status: "APPROVED" };
+  const cacheKey = `ads:map:${category || "all"}`;
+  const cached = await cacheGet<MapAdMarker[]>(cacheKey);
+  if (cached) return cached;
+
+  const where: Prisma.AdWhereInput = { status: "APPROVED", isPaused: false };
   if (category) {
     where.category = category;
   }
@@ -157,7 +170,7 @@ export async function getMapAds(
     },
   });
 
-  return ads.map((ad) => ({
+  const result = ads.map((ad) => ({
     id: ad.id,
     title: ad.title,
     price: ad.price,
@@ -169,22 +182,31 @@ export async function getMapAds(
     longitude: ad.longitude,
     thumbUrl: ad.images[0]?.thumbUrl ?? null,
   }));
+
+  await cacheSet(cacheKey, result, 60);
+  return result;
 }
 
 export async function getLatestAds(limit = 8): Promise<AdWithImages[]> {
+  const cacheKey = `ads:latest:${limit}`;
+  const cached = await cacheGet<AdWithImages[]>(cacheKey);
+  if (cached) return cached;
+
   await expireAdPromotions();
   const ads = await getPrisma().ad.findMany({
-    where: { status: "APPROVED" },
+    where: { status: "APPROVED", isPaused: false },
     include: adInclude,
     orderBy: [{ isTop: "desc" }, { isVip: "desc" }, { createdAt: "desc" }],
     take: limit,
   });
-  return ads as AdWithImages[];
+  const result = ads as AdWithImages[];
+  await cacheSet(cacheKey, result, 45);
+  return result;
 }
 
 export async function getPremiumAds(limit = 4): Promise<AdWithImages[]> {
   const ads = await getPrisma().ad.findMany({
-    where: { status: "APPROVED", isPremium: true },
+    where: { status: "APPROVED", isPremium: true, isPaused: false },
     include: adInclude,
     orderBy: { createdAt: "desc" },
     take: limit,
@@ -200,6 +222,7 @@ export async function getSimilarAds(
   const ads = await getPrisma().ad.findMany({
     where: {
       status: "APPROVED",
+      isPaused: false,
       category: category,
       id: { not: adId },
     },
@@ -270,6 +293,7 @@ export async function createAd(
     include: adInclude,
   });
 
+  void afterAdMutation();
   return ad;
 }
 
@@ -329,6 +353,9 @@ export async function purchaseAdPromotion(
     where: { id: adId },
     data: promoData,
     include: adInclude,
+  }).then((result) => {
+    void afterAdMutation();
+    return result;
   });
 }
 
@@ -336,6 +363,67 @@ export async function incrementContactClicks(adId: string): Promise<void> {
   await getPrisma().ad.update({
     where: { id: adId },
     data: { contactClicks: { increment: 1 } },
+  });
+}
+
+export async function getUserAdById(userId: string, adId: string) {
+  return getPrisma().ad.findFirst({
+    where: { id: adId, createdById: userId, status: { not: "DELETED" } },
+    include: adInclude,
+  });
+}
+
+export async function toggleAdPaused(userId: string, adId: string, paused: boolean) {
+  const ad = await getPrisma().ad.findFirst({
+    where: { id: adId, createdById: userId, status: "APPROVED" },
+  });
+  if (!ad) throw new Error("E'lon topilmadi yoki faol emas");
+
+  return getPrisma().ad.update({
+    where: { id: adId },
+    data: { isPaused: paused },
+    include: adInclude,
+  }).then((result) => {
+    void afterAdMutation();
+    return result;
+  });
+}
+
+export async function renewUserAd(userId: string, adId: string) {
+  const ad = await getPrisma().ad.findFirst({
+    where: { id: adId, createdById: userId, status: { not: "DELETED" } },
+  });
+  if (!ad) throw new Error("E'lon topilmadi");
+
+  const { getMonetizationSettings } = await import("@/lib/services/monetization");
+  const { spendUserCoins } = await import("@/lib/services/coins");
+  const settings = await getMonetizationSettings();
+  const cost = settings.renewListingCost;
+
+  if (cost > 0) {
+    try {
+      await spendUserCoins(
+        userId,
+        cost,
+        "SPEND",
+        `E'lonni yangilash: ${ad.title}`,
+        adId
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message === "INSUFFICIENT_COINS") {
+        throw new Error("INSUFFICIENT_COINS");
+      }
+      throw error;
+    }
+  }
+
+  return getPrisma().ad.update({
+    where: { id: adId },
+    data: { updatedAt: new Date(), isPaused: false },
+    include: adInclude,
+  }).then((result) => {
+    void afterAdMutation();
+    return result;
   });
 }
 
@@ -378,10 +466,13 @@ export async function updateAdStatus(
     data.deletedAt = new Date();
   }
 
-  return getPrisma().ad.update({
+  const updated = await getPrisma().ad.update({
     where: { id: adId },
     data,
   });
+
+  void afterAdMutation();
+  return updated;
 }
 
 export async function deleteAd(adId: string, userId: string) {
@@ -391,13 +482,16 @@ export async function deleteAd(adId: string, userId: string) {
 
   if (!ad) return null;
 
-  return getPrisma().ad.update({
+  const deleted = await getPrisma().ad.update({
     where: { id: adId },
     data: {
       status: "DELETED",
       deletedAt: new Date(),
     },
   });
+
+  void afterAdMutation();
+  return deleted;
 }
 
 export async function createReport(
@@ -628,4 +722,12 @@ export async function getAllUsers() {
     },
     orderBy: { createdAt: "desc" },
   });
+}
+
+async function afterAdMutation() {
+  const { invalidatePublicCache, revalidatePublicPages } = await import(
+    "@/lib/cache-invalidate"
+  );
+  await invalidatePublicCache();
+  await revalidatePublicPages();
 }

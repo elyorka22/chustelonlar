@@ -1,13 +1,15 @@
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const fetchCache = "force-no-store";
-
 import { notFound } from "next/navigation";
-import { getAdById, getSimilarAds, incrementAdViews, isFavorited } from "@/lib/services/ads";
-import { getActiveCategories } from "@/lib/services/categories";
+import { getSimilarAds, incrementAdViews, isFavorited } from "@/lib/services/ads";
+import {
+  getCachedAdById,
+  getCachedActiveCategories,
+  PUBLIC_PAGE_REVALIDATE,
+} from "@/lib/cached-data";
 import { auth } from "@/lib/auth";
 import { AdDetailMobile } from "@/components/mobile/ad-detail-mobile";
 import type { Metadata } from "next";
+
+export const revalidate = PUBLIC_PAGE_REVALIDATE;
 
 interface AdPageProps {
   params: Promise<{ id: string }>;
@@ -15,7 +17,7 @@ interface AdPageProps {
 
 export async function generateMetadata({ params }: AdPageProps): Promise<Metadata> {
   const { id } = await params;
-  const ad = await getAdById(id);
+  const ad = await getCachedAdById(id);
   if (!ad) return { title: "E'lon topilmadi" };
   return {
     title: ad.title,
@@ -28,19 +30,19 @@ export async function generateMetadata({ params }: AdPageProps): Promise<Metadat
 
 export default async function AdDetailPage({ params }: AdPageProps) {
   const { id } = await params;
-  const ad = await getAdById(id);
+  const ad = await getCachedAdById(id);
 
-  if (!ad || ad.status !== "APPROVED") {
+  if (!ad || ad.status !== "APPROVED" || ad.isPaused) {
     notFound();
   }
 
-  await incrementAdViews(id);
+  void incrementAdViews(id);
 
   const session = await auth();
   const [similarAds, favorited, categories] = await Promise.all([
     getSimilarAds(id, ad.category),
     session?.user?.id ? isFavorited(session.user.id, id) : false,
-    getActiveCategories(),
+    getCachedActiveCategories(),
   ]);
 
   return (

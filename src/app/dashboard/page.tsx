@@ -2,7 +2,7 @@ import { requireAuth, getCurrentUserProfile } from "@/lib/session";
 import { getUserAds, getUserFavorites } from "@/lib/services/ads";
 import { getActiveCategories } from "@/lib/services/categories";
 import { getUserDashboardStats } from "@/lib/services/coins";
-import { getMonetizationSettings } from "@/lib/services/monetization";
+import { getMonetizationSettings, getContactLinks } from "@/lib/services/monetization";
 import { ProfileMobile } from "@/components/mobile/profile-mobile";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,12 +14,13 @@ export default async function DashboardPage() {
   const user = await requireAuth();
   const profile = await getCurrentUserProfile();
 
-  const [ads, favorites, categories, dashboardStats, settings] = await Promise.all([
+  const [ads, favorites, categories, dashboardStats, settings, contact] = await Promise.all([
     getUserAds(user.id),
     getUserFavorites(user.id),
     getActiveCategories(),
     getUserDashboardStats(user.id),
     getMonetizationSettings(),
+    getContactLinks(),
   ]);
 
   return (
@@ -33,12 +34,8 @@ export default async function DashboardPage() {
       favorites={favorites as never}
       categories={categories}
       dashboardStats={dashboardStats}
-      promotionCosts={{
-        top: settings.topPromotionCost,
-        vip: settings.vipPromotionCost,
-        urgent: settings.urgentPromotionCost,
-      }}
       coinValueUzs={settings.coinValueUzs}
+      contact={contact}
     />
   );
 }

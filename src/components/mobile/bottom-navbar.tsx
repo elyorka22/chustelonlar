@@ -37,6 +37,7 @@ export function BottomNavbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch
                   className="relative -top-5 flex flex-col items-center"
                 >
                   <motion.div
@@ -53,6 +54,7 @@ export function BottomNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
                 className="flex flex-1 flex-col items-center gap-0.5 py-1"
               >
                 <Icon

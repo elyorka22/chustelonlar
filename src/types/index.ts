@@ -35,6 +35,7 @@ export interface AdWithImages {
   vipUntil?: Date | null;
   isUrgent?: boolean;
   urgentUntil?: Date | null;
+  isPaused?: boolean;
   views: number;
   contactClicks?: number;
   listingCoinCost?: number;

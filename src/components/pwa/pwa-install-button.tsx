@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Download, Plus, Share, X } from "lucide-react";
-import { toast } from "sonner";
+import { Download, Plus } from "lucide-react";
+import { PwaInstallSheet } from "@/components/pwa/pwa-install-sheet";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -27,8 +27,11 @@ export function PwaInstallButton() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
-  const [iosHintOpen, setIosHintOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const [showIosButton, setShowIosButton] = useState(false);
+
+  const sheetVariant = showIosButton && !deferredPrompt ? "ios" : "android";
 
   useEffect(() => {
     if (isStandaloneMode()) {
@@ -48,7 +51,7 @@ export function PwaInstallButton() {
     const handleAppInstalled = () => {
       setInstalled(true);
       setDeferredPrompt(null);
-      toast.success("Ilova o'rnatildi");
+      setSheetOpen(false);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -60,23 +63,39 @@ export function PwaInstallButton() {
     };
   }, []);
 
-  const handleInstall = useCallback(async () => {
-    if (showIosButton && !deferredPrompt) {
-      setIosHintOpen(true);
+  const openSheet = useCallback(() => {
+    setSheetOpen(true);
+  }, []);
+
+  const handleNativeInstall = useCallback(async () => {
+    if (!deferredPrompt) {
+      setSheetOpen(true);
       return;
     }
 
-    if (!deferredPrompt) return;
-
-    await deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-
-    if (choice.outcome === "accepted") {
-      toast.success("Ilova o'rnatildi");
+    setInstalling(true);
+    try {
+      await deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === "accepted") {
+        setSheetOpen(false);
+      }
+    } finally {
+      setInstalling(false);
+      setDeferredPrompt(null);
     }
+  }, [deferredPrompt]);
 
-    setDeferredPrompt(null);
-  }, [deferredPrompt, showIosButton]);
+  const handleInstallClick = useCallback(() => {
+    if (showIosButton && !deferredPrompt) {
+      openSheet();
+      return;
+    }
+    if (deferredPrompt) {
+      openSheet();
+      return;
+    }
+  }, [deferredPrompt, openSheet, showIosButton]);
 
   if (installed) {
     return null;
@@ -98,49 +117,20 @@ export function PwaInstallButton() {
     <>
       <button
         type="button"
-        onClick={handleInstall}
+        onClick={handleInstallClick}
         className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-2xl bg-primary px-4 text-[14px] font-bold text-white shadow-md shadow-primary/25 active:scale-95 transition-transform"
       >
         <Download className="h-4 w-4" strokeWidth={2.5} />
         O&apos;rnatish
       </button>
 
-      {iosHintOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 p-4 pb-8">
-          <div className="w-full max-w-sm rounded-[24px] bg-white p-5 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-[16px] font-bold text-gray-900">Ilovani o&apos;rnatish</h3>
-              <button
-                type="button"
-                onClick={() => setIosHintOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary"
-                aria-label="Yopish"
-              >
-                <X className="h-4 w-4 text-gray-600" />
-              </button>
-            </div>
-            <p className="text-[14px] leading-relaxed text-gray-600">
-              Safari brauzerida quyidagi amallarni bajaring:
-            </p>
-            <ol className="mt-3 space-y-2 text-[14px] text-gray-700">
-              <li className="flex items-center gap-2">
-                <Share className="h-4 w-4 shrink-0 text-primary" />
-                Pastdagi <strong>Ulashish</strong> tugmasini bosing
-              </li>
-              <li>
-                <strong>Bosh ekranga qo&apos;shish</strong> ni tanlang
-              </li>
-            </ol>
-            <button
-              type="button"
-              onClick={() => setIosHintOpen(false)}
-              className="mt-4 h-11 w-full rounded-2xl bg-primary text-[14px] font-bold text-white"
-            >
-              Tushundim
-            </button>
-          </div>
-        </div>
-      )}
+      <PwaInstallSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        variant={sheetVariant}
+        onConfirmInstall={handleNativeInstall}
+        installing={installing}
+      />
     </>
   );
 }

@@ -32,7 +32,7 @@ export function AdCardHorizontal({
       whileTap={{ scale: 0.98 }}
       className="w-[210px] shrink-0 snap-start"
     >
-      <Link href={`/ads/${ad.id}`} className="block">
+      <Link href={`/ads/${ad.id}`} prefetch className="block">
         <div className={cn("flex gap-2.5 overflow-hidden rounded-2xl bg-white p-2 card-shadow", getVipCardClass(ad.isVip, ad.vipUntil))}>
           <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-xl bg-secondary">
             {thumbUrl ? (

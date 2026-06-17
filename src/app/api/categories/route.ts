@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { getActiveCategories } from "@/lib/services/categories";
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const fetchCache = "force-no-store";
+import { getCachedActiveCategories } from "@/lib/cached-data";
+
+export const revalidate = 300;
 
 export async function GET() {
   try {
-    const categories = await getActiveCategories();
-    return NextResponse.json(categories);
+    const categories = await getCachedActiveCategories();
+    return NextResponse.json(categories, {
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    });
   } catch {
     return NextResponse.json([]);
   }

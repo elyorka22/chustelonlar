@@ -124,6 +124,7 @@ export async function purchasePromotion(
     revalidatePath("/dashboard");
     revalidatePath("/ads");
     revalidatePath(`/ads/${adId}`);
+    revalidatePath(`/dashboard/ads/${adId}`);
     return { success: true };
   } catch (error) {
     if (error instanceof Error && error.message === "INSUFFICIENT_COINS") {
@@ -132,6 +133,47 @@ export async function purchasePromotion(
     if (error instanceof Error) {
       return { error: error.message };
     }
+    return { error: "Xatolik yuz berdi" };
+  }
+}
+
+export async function toggleAdPausedAction(adId: string, paused: boolean) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  try {
+    const { toggleAdPaused } = await import("@/lib/services/ads");
+    await toggleAdPaused(session.user.id, adId, paused);
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/ads/${adId}`);
+    revalidatePath("/ads");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof Error) return { error: error.message };
+    return { error: "Xatolik yuz berdi" };
+  }
+}
+
+export async function renewAdAction(adId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  try {
+    const { renewUserAd } = await import("@/lib/services/ads");
+    await renewUserAd(session.user.id, adId);
+    revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/ads/${adId}`);
+    revalidatePath("/ads");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_COINS") {
+      return { error: "Monetka yetarli emas", code: "INSUFFICIENT_COINS" as const };
+    }
+    if (error instanceof Error) return { error: error.message };
     return { error: "Xatolik yuz berdi" };
   }
 }
@@ -252,6 +294,7 @@ export async function removeAd(adId: string) {
   revalidatePath("/dashboard");
   revalidatePath("/ads");
   revalidatePath(`/ads/${adId}`);
+  revalidatePath(`/dashboard/ads/${adId}`);
   return { success: true };
 }
 

@@ -1,71 +1,29 @@
-"use client";
+import {
+  getCachedActiveCategories,
+  getCachedMapAds,
+  PUBLIC_PAGE_REVALIDATE,
+} from "@/lib/cached-data";
+import { MapPageClient } from "./map-page-client";
 
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { MobileHeader } from "@/components/mobile/mobile-header";
-import type { CategoryData, MapAdMarker } from "@/types";
+export const revalidate = PUBLIC_PAGE_REVALIDATE;
 
-const MobileMapView = dynamic(
-  () => import("@/components/mobile/mobile-map-view").then((m) => m.MobileMapView),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-primary border-t-transparent" />
-      </div>
-    ),
+export default async function MapPage() {
+  let initialAds: Awaited<ReturnType<typeof getCachedMapAds>> = [];
+  let initialCategories: Awaited<ReturnType<typeof getCachedActiveCategories>> = [];
+
+  try {
+    [initialAds, initialCategories] = await Promise.all([
+      getCachedMapAds(""),
+      getCachedActiveCategories(),
+    ]);
+  } catch {
+    // DB unavailable — client can retry via API
   }
-);
-
-export default function MapPage() {
-  const [ads, setAds] = useState<MapAdMarker[]>([]);
-  const [categories, setCategories] = useState<CategoryData[]>([]);
-  const [category, setCategory] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then(setCategories)
-      .catch(() => setCategories([]));
-  }, []);
-
-  useEffect(() => {
-    async function fetchAds() {
-      setLoading(true);
-      try {
-        const params = category ? `?category=${category}` : "";
-        const res = await fetch(`/api/ads/map${params}`);
-        if (!res.ok) {
-          setAds([]);
-          return;
-        }
-        const data = await res.json();
-        setAds(Array.isArray(data) ? data : []);
-      } catch {
-        setAds([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchAds();
-  }, [category]);
 
   return (
-    <div className="bg-white">
-      <MobileHeader title="Xarita" />
-      {loading ? (
-        <div className="flex h-[60vh] items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-primary border-t-transparent" />
-        </div>
-      ) : (
-        <MobileMapView
-          ads={ads}
-          category={category}
-          categories={categories}
-          onCategoryChange={setCategory}
-        />
-      )}
-    </div>
+    <MapPageClient
+      initialAds={initialAds}
+      initialCategories={initialCategories}
+    />
   );
 }

@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { buildAdsSearchParams, type AdsFilterValues } from "@/lib/ad-filters";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -11,6 +12,8 @@ interface SearchBarProps {
   action?: string;
   className?: string;
   onSearch?: (query: string) => void;
+  /** Preserve filter params from URL when searching */
+  filterParams?: AdsFilterValues;
 }
 
 export function SearchBar({
@@ -19,6 +22,7 @@ export function SearchBar({
   action = "/ads",
   className,
   onSearch,
+  filterParams = {},
 }: SearchBarProps) {
   const router = useRouter();
   const [query, setQuery] = useState(defaultValue);
@@ -29,13 +33,16 @@ export function SearchBar({
       onSearch(query);
       return;
     }
-    const params = new URLSearchParams();
-    if (query) params.set("search", query);
-    router.push(`${action}?${params.toString()}`);
+    const params = buildAdsSearchParams({
+      ...filterParams,
+      search: query.trim() || undefined,
+    });
+    const qs = params.toString();
+    router.push(qs ? `${action}?${qs}` : action);
   };
 
   return (
-    <form onSubmit={handleSubmit} className={cn("relative", className)}>
+    <form onSubmit={handleSubmit} className={cn("relative min-w-0 flex-1", className)}>
       <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
       <input
         type="search"

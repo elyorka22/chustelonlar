@@ -36,7 +36,7 @@ export function AdCardGrid({
       transition={{ duration: 0.25, delay: index * 0.05 }}
       whileTap={{ scale: 0.98 }}
     >
-      <Link href={`/ads/${ad.id}`} className="block">
+      <Link href={`/ads/${ad.id}`} prefetch className="block">
         <div className={cn("overflow-hidden rounded-[20px] bg-white card-shadow", getVipCardClass(ad.isVip, ad.vipUntil))}>
           <div className="relative aspect-[4/3] bg-secondary">
             {thumbUrl ? (

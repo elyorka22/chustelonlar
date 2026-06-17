@@ -26,7 +26,7 @@ export function AdCardList({ ad, categories = [], index = 0 }: AdCardListProps) 
       transition={{ duration: 0.2, delay: index * 0.04 }}
       whileTap={{ scale: 0.99 }}
     >
-      <Link href={`/ads/${ad.id}`}>
+      <Link href={`/ads/${ad.id}`} prefetch>
         <div className="flex gap-3 rounded-[20px] bg-white p-3 card-shadow">
           <div className="relative h-[88px] w-[88px] flex-shrink-0 overflow-hidden rounded-2xl bg-secondary">
             {thumbUrl ? (

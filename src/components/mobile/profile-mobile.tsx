@@ -17,18 +17,17 @@ import {
   BarChart3,
   MousePointerClick,
   TrendingUp,
+  Pencil,
+  Bell,
+  MessageCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { formatPrice, formatRelativeDate } from "@/lib/utils";
+import { formatPrice, formatRelativeDate, cn } from "@/lib/utils";
 import { AD_STATUS_LABELS, AD_STATUS_STYLES } from "@/lib/constants";
-import { markAdSold, removeAd } from "@/lib/actions";
 import { toast } from "sonner";
 import { ProfileSettings } from "@/components/mobile/profile-settings";
 import { MonetkaWalletCard, CoinHistoryTable } from "@/components/mobile/monetka-wallet";
-import { MonetkaBadge } from "@/components/ui/monetka-icon";
-import { PromotionPanel } from "@/components/mobile/promotion-panel";
-import { isPromotionActive } from "@/lib/promotions";
-import { cn } from "@/lib/utils";
+import { MonetkaIcon } from "@/components/ui/monetka-icon";
 import type { AdWithImages, CategoryData, UserDashboardStats } from "@/types";
 import { AdCardGrid } from "@/components/mobile/ad-card-grid";
 
@@ -46,15 +45,19 @@ interface ProfileMobileProps {
   favorites: AdWithImages[];
   categories: CategoryData[];
   dashboardStats: UserDashboardStats;
-  promotionCosts: { top: number; vip: number; urgent: number };
   coinValueUzs: number;
+  contact: {
+    telegram: string | null;
+    phone: string | null;
+    whatsapp: string | null;
+  };
 }
 
 const TABS = [
-  { id: "ads", label: "E'lonlar", icon: FileText },
-  { id: "wallet", label: "Monetka", icon: BarChart3 },
-  { id: "saved", label: "Saqlangan", icon: Bookmark },
-  { id: "settings", label: "Sozlamalar", icon: Settings },
+  { id: "ads", label: "E'lonlar" },
+  { id: "wallet", label: "Monetka" },
+  { id: "saved", label: "Saqlangan" },
+  { id: "settings", label: "Sozlamalar" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -72,118 +75,151 @@ export function ProfileMobile({
   favorites,
   categories,
   dashboardStats,
-  promotionCosts,
   coinValueUzs,
+  contact,
 }: ProfileMobileProps) {
   const stats = {
     total: dashboardStats.listings.total,
     approved: dashboardStats.listings.active,
     pending: ads.filter((a) => a.status === "PENDING").length,
-    sold: dashboardStats.listings.sold,
     totalViews: dashboardStats.engagement.totalViews,
   };
+
   const [activeTab, setActiveTab] = useState<TabId>("ads");
   const [displayName, setDisplayName] = useState(user.name || "");
   const [savedAds, setSavedAds] = useState(favorites);
-
-  const handleMarkSold = async (adId: string) => {
-    const result = await markAdSold(adId);
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
-    toast.success("Sotildi");
-    window.location.reload();
-  };
-
-  const handleDelete = async (adId: string) => {
-    if (
-      !confirm(
-        "E'lonni o'chirmoqchimisiz? Rasmlar 24 soat ichida serverdan ham o'chiriladi."
-      )
-    ) {
-      return;
-    }
-    const result = await removeAd(adId);
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
-    toast.success("O'chirildi");
-    window.location.reload();
-  };
+  const [topUpOpen, setTopUpOpen] = useState(false);
 
   const initials = (displayName || user.name || user.email)?.[0]?.toUpperCase() || "?";
 
+  const telegramUrl = contact.telegram
+    ? contact.telegram.startsWith("http")
+      ? contact.telegram
+      : `https://t.me/${contact.telegram.replace("@", "")}`
+    : null;
+  const whatsappUrl = contact.whatsapp
+    ? `https://wa.me/${contact.whatsapp.replace(/\D/g, "")}`
+    : null;
+
+  const handleTopUp = () => {
+    if (telegramUrl || whatsappUrl || contact.phone) {
+      setTopUpOpen(true);
+      return;
+    }
+    toast.info("Admin bilan bog'lanish uchun sozlamalar kutilmoqda");
+  };
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-6">
-      {/* Header card */}
-      <div className="bg-white px-4 pb-5 pt-4 shadow-[0_1px_0_#E2E8F0]">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-4">
+    <div className="min-h-screen bg-[#F4F6FA] pb-8">
+      {/* Header */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-white/95 px-4 backdrop-blur-md">
+        <div className="w-10" />
+        <h1 className="text-[17px] font-extrabold text-[#0F172A]">Profil</h1>
+        <button
+          type="button"
+          className="flex h-10 w-10 items-center justify-center rounded-2xl active:scale-95"
+          aria-label="Bildirishnomalar"
+        >
+          <Bell className="h-5 w-5 text-[#64748B]" />
+        </button>
+      </header>
+
+      <div className="px-4 pt-2">
+        {/* Blue profile card */}
+        <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-primary via-blue-600 to-blue-700 p-5 text-white shadow-lg shadow-primary/25">
+          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/10 blur-xl" />
+
+          <div className="relative flex items-start gap-4">
             {user.image ? (
               <img
                 src={user.image}
                 alt=""
-                className="h-[72px] w-[72px] shrink-0 rounded-[22px] object-cover ring-4 ring-[#F1F5F9]"
+                className="h-[64px] w-[64px] shrink-0 rounded-[18px] object-cover ring-2 ring-white/30"
               />
             ) : (
-              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[22px] bg-gradient-to-br from-primary to-blue-600 text-2xl font-bold text-white ring-4 ring-[#F1F5F9]">
+              <div className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-[18px] bg-violet-500 text-2xl font-bold ring-2 ring-white/30">
                 {initials}
               </div>
             )}
 
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate text-[20px] font-extrabold tracking-tight text-[#0F172A]">
-                  {displayName || "Foydalanuvchi"}
-                </h1>
-                {user.role === "ADMIN" && (
-                  <span className="rounded-full bg-[#0F172A] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                    Admin
-                  </span>
-                )}
-                <MonetkaBadge balance={user.coinBalance} />
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="truncate text-[20px] font-extrabold">
+                      {displayName || "Foydalanuvchi"}
+                    </h2>
+                    {user.role === "ADMIN" && (
+                      <span className="rounded-md bg-[#0F172A] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide">
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 truncate text-[13px] text-white/80">{user.email}</p>
+                  <p className="mt-0.5 text-[11px] font-medium text-white/60">
+                    A&apos;zo: {formatMemberSince(user.createdAt)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("settings")}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm"
+                  aria-label="Sozlamalar"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
               </div>
-              <p className="mt-0.5 truncate text-[13px] text-[#64748B]">{user.email}</p>
-              <p className="mt-1 text-[11px] font-medium text-[#94A3B8]">
-                A&apos;zo: {formatMemberSince(user.createdAt)}
-              </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab("settings")}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#F8FAFC] text-[#64748B] ring-1 ring-[#E2E8F0] active:scale-95 transition-transform"
-            aria-label="Sozlamalar"
-          >
-            <Settings className="h-[18px] w-[18px]" />
-          </button>
+          {/* Wallet inline */}
+          <div className="relative mt-5 rounded-[18px] bg-white/15 p-4 backdrop-blur-sm ring-1 ring-white/20">
+            <div className="flex items-center gap-3">
+              <MonetkaIcon size={36} />
+              <div>
+                <p className="text-[28px] font-black leading-none">{user.coinBalance}</p>
+                <p className="mt-0.5 text-[13px] font-semibold text-white/80">Monetka</p>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={handleTopUp}
+                className="flex-1 rounded-xl bg-white py-2.5 text-[13px] font-bold text-primary active:scale-[0.98] transition-transform"
+              >
+                Hisobni to&apos;ldirish
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("wallet")}
+                className="flex-1 rounded-xl bg-white/10 py-2.5 text-[13px] font-bold text-white ring-1 ring-white/30 active:scale-[0.98] transition-transform"
+              >
+                Tarix
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Stats strip */}
-        <div className="mt-5 grid grid-cols-4 overflow-hidden rounded-[18px] bg-[#F8FAFC] ring-1 ring-[#E2E8F0]">
+        {/* Stats */}
+        <div className="mt-4 grid grid-cols-4 gap-2">
           {[
-            { label: "E'lonlar", value: stats.total, icon: FileText },
-            { label: "Faol", value: stats.approved, icon: CheckCircle2 },
-            { label: "Kutilmoqda", value: stats.pending, icon: Clock },
-            { label: "Ko'rishlar", value: stats.totalViews, icon: Eye },
-          ].map((item, i) => {
+            { label: "E'lonlar", value: stats.total, icon: FileText, bg: "bg-blue-50", color: "text-primary" },
+            { label: "Faol", value: stats.approved, icon: CheckCircle2, bg: "bg-emerald-50", color: "text-emerald-600" },
+            { label: "Kutilmoqda", value: stats.pending, icon: Clock, bg: "bg-orange-50", color: "text-orange-500" },
+            { label: "Ko'rishlar", value: stats.totalViews, icon: Eye, bg: "bg-violet-50", color: "text-violet-600" },
+          ].map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.label}
-                className={cn(
-                  "flex flex-col items-center px-2 py-3.5 text-center",
-                  i > 0 && "border-l border-[#E2E8F0]"
-                )}
+                className="flex flex-col items-center rounded-[16px] bg-white px-1 py-3 shadow-[0_2px_12px_rgba(15,23,42,0.05)]"
               >
-                <Icon className="mb-1 h-4 w-4 text-primary" strokeWidth={2.2} />
-                <p className="text-[17px] font-extrabold leading-none text-[#0F172A]">
-                  {item.value}
-                </p>
-                <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-[#94A3B8]">
+                <div className={cn("mb-1.5 flex h-8 w-8 items-center justify-center rounded-xl", item.bg)}>
+                  <Icon className={cn("h-4 w-4", item.color)} strokeWidth={2.2} />
+                </div>
+                <p className="text-[17px] font-extrabold leading-none text-[#0F172A]">{item.value}</p>
+                <p className="mt-1 text-center text-[9px] font-semibold uppercase tracking-wide text-[#94A3B8]">
                   {item.label}
                 </p>
               </div>
@@ -192,7 +228,7 @@ export function ProfileMobile({
         </div>
 
         {user.role === "ADMIN" && (
-          <Link href="/admin" className="mt-4 block">
+          <Link href="/admin" className="mt-3 block">
             <motion.div
               whileTap={{ scale: 0.98 }}
               className="flex h-[48px] items-center justify-between rounded-[16px] bg-[#0F172A] px-4 text-white"
@@ -208,10 +244,9 @@ export function ProfileMobile({
       </div>
 
       {/* Tabs */}
-      <div className="sticky top-0 z-20 bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur-md">
-        <div className="flex gap-1 rounded-[14px] bg-white p-1 shadow-[0_2px_12px_rgba(15,23,42,0.06)] ring-1 ring-[#E2E8F0]">
+      <div className="sticky top-14 z-20 mt-4 bg-[#F4F6FA]/95 px-4 py-2 backdrop-blur-md">
+        <div className="flex gap-1 rounded-[14px] bg-white p-1 shadow-[0_2px_12px_rgba(15,23,42,0.06)]">
           {TABS.map((tab) => {
-            const Icon = tab.icon;
             const active = activeTab === tab.id;
             return (
               <button
@@ -219,13 +254,10 @@ export function ProfileMobile({
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2.5 text-[12px] font-bold transition-all duration-200",
-                  active
-                    ? "bg-primary text-white shadow-sm shadow-primary/25"
-                    : "text-[#64748B]"
+                  "flex-1 rounded-[10px] py-2.5 text-[12px] font-bold transition-all",
+                  active ? "bg-primary text-white shadow-sm shadow-primary/25" : "text-[#64748B]"
                 )}
               >
-                <Icon className="h-3.5 w-3.5" strokeWidth={2.5} />
                 {tab.label}
               </button>
             );
@@ -233,135 +265,77 @@ export function ProfileMobile({
         </div>
       </div>
 
-      <div className="px-4">
+      <div className="px-4 pt-3">
         {activeTab === "ads" && (
           <div className="space-y-3">
             <Link
               href="/create"
-              className="flex h-[50px] items-center justify-center gap-2 rounded-[16px] bg-primary text-[14px] font-bold text-white shadow-md shadow-primary/20 active:scale-[0.99] transition-transform"
+              className="flex h-[52px] items-center justify-center gap-2 rounded-[16px] bg-primary text-[15px] font-bold text-white shadow-lg shadow-primary/25 active:scale-[0.99] transition-transform"
             >
               <Plus className="h-5 w-5" strokeWidth={2.5} />
               Yangi e&apos;lon joylash
             </Link>
 
-            {savedAds.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("saved")}
-                className="flex h-[48px] w-full items-center justify-between rounded-[16px] bg-white px-4 ring-1 ring-[#E2E8F0] active:scale-[0.99] transition-transform"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50">
-                    <Heart className="h-4 w-4 fill-red-500 text-red-500" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[14px] font-bold text-[#0F172A]">Saqlanganlar</p>
-                    <p className="text-[11px] text-[#64748B]">{savedAds.length} ta e&apos;lon</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-[#94A3B8]" />
-              </button>
-            )}
-
             {ads.length === 0 ? (
-              <div className="rounded-[20px] bg-white px-6 py-14 text-center ring-1 ring-[#E2E8F0]">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F8FAFC]">
-                  <FileText className="h-7 w-7 text-[#CBD5E1]" />
-                </div>
-                <p className="text-[15px] font-bold text-[#0F172A]">E&apos;lonlar yo&apos;q</p>
+              <div className="rounded-[20px] bg-white px-6 py-14 text-center shadow-[0_2px_16px_rgba(15,23,42,0.06)]">
+                <FileText className="mx-auto h-10 w-10 text-[#CBD5E1]" />
+                <p className="mt-3 text-[15px] font-bold text-[#0F172A]">E&apos;lonlar yo&apos;q</p>
                 <p className="mt-1 text-[13px] text-[#64748B]">
-                  Birinchi e&apos;loningizni joylang va sotishni boshlang
+                  Birinchi e&apos;loningizni joylang
                 </p>
               </div>
             ) : (
               ads.map((ad, i) => (
                 <motion.article
                   key={ad.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="overflow-hidden rounded-[18px] bg-white ring-1 ring-[#E2E8F0]"
+                  className="flex items-center gap-3 rounded-[18px] bg-white p-3 shadow-[0_2px_16px_rgba(15,23,42,0.06)]"
                 >
-                  <Link href={`/ads/${ad.id}`} className="flex gap-3.5 p-3.5">
-                    <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-[14px] bg-[#F1F5F9]">
-                      {ad.images[0] ? (
-                        <Image
-                          src={ad.images[0].thumbUrl}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="88px"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-2xl text-[#CBD5E1]">
-                          —
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1 py-0.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="line-clamp-2 text-[14px] font-bold leading-snug text-[#0F172A]">
-                          {ad.title}
-                        </h3>
-                        <span
-                          className={cn(
-                            "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
-                            AD_STATUS_STYLES[ad.status]
-                          )}
-                        >
-                          {AD_STATUS_LABELS[ad.status]}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-[16px] font-extrabold text-primary">
-                        {formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}
-                      </p>
-                      <div className="mt-1.5 flex items-center gap-3 text-[11px] font-medium text-[#94A3B8]">
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {ad.views}
-                        </span>
-                        <span>{formatRelativeDate(ad.createdAt)}</span>
-                      </div>
-                    </div>
+                  <Link href={`/ads/${ad.id}`} className="relative h-[80px] w-[80px] shrink-0 overflow-hidden rounded-[14px] bg-[#F1F5F9]">
+                    {ad.images[0] ? (
+                      <Image src={ad.images[0].thumbUrl} alt="" fill className="object-cover" sizes="80px" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-[#CBD5E1]">—</div>
+                    )}
                   </Link>
 
-                  <div className="flex gap-2 border-t border-[#F1F5F9] px-3.5 py-2.5">
-                    {ad.status === "APPROVED" && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleMarkSold(ad.id)}
-                          className="flex-1 rounded-xl bg-[#F8FAFC] py-2.5 text-[12px] font-bold text-[#475569] ring-1 ring-[#E2E8F0]"
-                        >
-                          Sotildi deb belgilash
-                        </button>
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(ad.id)}
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/ads/${ad.id}`}>
+                      <h3 className="line-clamp-1 text-[15px] font-bold text-[#0F172A]">{ad.title}</h3>
+                      <p className="mt-1 text-[16px] font-extrabold text-primary">
+                        {formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}
+                      </p>
+                    </Link>
+                    <div className="mt-1.5 flex items-center gap-3 text-[11px] font-medium text-[#94A3B8]">
+                      <span className="flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        {ad.views}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Heart className="h-3 w-3" />
+                        {ad._count?.favorites ?? 0}
+                      </span>
+                      <span>{formatRelativeDate(ad.createdAt)}</span>
+                    </div>
+                    <span
                       className={cn(
-                        "rounded-xl bg-red-50 py-2.5 text-[12px] font-bold text-red-600 ring-1 ring-red-100",
-                        ad.status === "APPROVED" ? "px-4" : "flex-1"
+                        "mt-2 inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold",
+                        AD_STATUS_STYLES[ad.status]
                       )}
                     >
-                      O&apos;chirish
-                    </button>
+                      {ad.isPaused && ad.status === "APPROVED" ? "Yashirin" : AD_STATUS_LABELS[ad.status]}
+                    </span>
                   </div>
-                  {ad.status === "APPROVED" && (
-                    <div className="border-t border-[#F1F5F9] px-3.5 pb-3.5 pt-2">
-                      <PromotionPanel
-                        adId={ad.id}
-                        costs={promotionCosts}
-                        active={{
-                          isTop: isPromotionActive(!!ad.isTop, ad.topUntil),
-                          isVip: isPromotionActive(!!ad.isVip, ad.vipUntil),
-                          isUrgent: isPromotionActive(!!ad.isUrgent, ad.urgentUntil),
-                        }}
-                      />
-                    </div>
-                  )}
+
+                  <Link
+                    href={`/dashboard/ads/${ad.id}`}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F4F6FA] text-[#64748B] active:scale-95 transition-transform"
+                    aria-label="Sozlamalar"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Link>
                 </motion.article>
               ))
             )}
@@ -377,7 +351,7 @@ export function ProfileMobile({
               coinValueUzs={coinValueUzs}
             />
 
-            <div className="rounded-[20px] bg-white p-4 ring-1 ring-[#E2E8F0]">
+            <div className="rounded-[20px] bg-white p-4 shadow-[0_2px_16px_rgba(15,23,42,0.06)]">
               <h2 className="text-[15px] font-extrabold text-[#0F172A]">E&apos;lon statistikasi</h2>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {[
@@ -387,12 +361,12 @@ export function ProfileMobile({
                   { label: "Muddati tugagan", value: dashboardStats.listings.expired },
                   { label: "Ko'rishlar", value: dashboardStats.engagement.totalViews, icon: Eye },
                   { label: "Saqlangan", value: dashboardStats.engagement.favoritesCount, icon: Heart },
-                  { label: "Kontakt bosish", value: dashboardStats.engagement.contactClicks, icon: MousePointerClick },
-                  { label: "O'rtacha ko'rish", value: dashboardStats.engagement.avgViewsPerListing, icon: TrendingUp },
+                  { label: "Kontakt", value: dashboardStats.engagement.contactClicks, icon: MousePointerClick },
+                  { label: "O'rtacha", value: dashboardStats.engagement.avgViewsPerListing, icon: TrendingUp },
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.label} className="rounded-xl bg-[#F8FAFC] px-3 py-2.5 ring-1 ring-[#E2E8F0]">
+                    <div key={item.label} className="rounded-xl bg-[#F8FAFC] px-3 py-2.5">
                       <div className="flex items-center gap-1">
                         {Icon && <Icon className="h-3 w-3 text-primary" />}
                         <p className="text-[10px] font-bold uppercase text-[#94A3B8]">{item.label}</p>
@@ -404,35 +378,6 @@ export function ProfileMobile({
               </div>
             </div>
 
-            <div className="rounded-[20px] bg-white p-4 ring-1 ring-[#E2E8F0]">
-              <h2 className="text-[15px] font-extrabold text-[#0F172A]">Monetka tahlili</h2>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-rose-50 px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase text-rose-600">Reklamaga</p>
-                  <p className="text-[18px] font-extrabold text-rose-900">
-                    -{dashboardStats.coins.spentOnPromotions}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-amber-50 px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase text-amber-700">Joylashga</p>
-                  <p className="text-[18px] font-extrabold text-amber-900">
-                    -{dashboardStats.coins.spentOnPublishing}
-                  </p>
-                </div>
-              </div>
-              {dashboardStats.topListing && (
-                <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-3 ring-1 ring-emerald-100">
-                  <p className="text-[10px] font-bold uppercase text-emerald-700">Eng muvaffaqiyatli</p>
-                  <p className="mt-1 text-[14px] font-bold text-[#0F172A]">
-                    {dashboardStats.topListing.title}
-                  </p>
-                  <p className="text-[12px] text-emerald-700">
-                    {dashboardStats.topListing.views} ko&apos;rish
-                  </p>
-                </div>
-              )}
-            </div>
-
             <div>
               <h2 className="mb-2 px-1 text-[15px] font-extrabold text-[#0F172A]">Tranzaksiyalar</h2>
               <CoinHistoryTable transactions={dashboardStats.transactions} />
@@ -442,22 +387,10 @@ export function ProfileMobile({
 
         {activeTab === "saved" && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <div>
-                <h2 className="text-[16px] font-bold text-[#0F172A]">Saqlangan e&apos;lonlar</h2>
-                <p className="text-[12px] text-[#64748B]">{savedAds.length} ta e&apos;lon</p>
-              </div>
-            </div>
-
             {savedAds.length === 0 ? (
-              <div className="rounded-[20px] bg-white px-6 py-14 text-center ring-1 ring-[#E2E8F0]">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F8FAFC]">
-                  <Bookmark className="h-7 w-7 text-[#CBD5E1]" />
-                </div>
-                <p className="text-[15px] font-bold text-[#0F172A]">Saqlanganlar yo&apos;q</p>
-                <p className="mt-1 text-[13px] text-[#64748B]">
-                  Yoqtirgan e&apos;lonlaringiz shu yerda ko&apos;rinadi
-                </p>
+              <div className="rounded-[20px] bg-white px-6 py-14 text-center shadow-[0_2px_16px_rgba(15,23,42,0.06)]">
+                <Bookmark className="mx-auto h-10 w-10 text-[#CBD5E1]" />
+                <p className="mt-3 text-[15px] font-bold text-[#0F172A]">Saqlanganlar yo&apos;q</p>
                 <Link
                   href="/ads"
                   className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-[13px] font-bold text-white"
@@ -497,6 +430,56 @@ export function ProfileMobile({
           />
         )}
       </div>
+
+      {/* Top up modal */}
+      {topUpOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 p-4 pb-8">
+          <div className="w-full max-w-sm rounded-[24px] bg-white p-5 shadow-xl">
+            <h3 className="text-[16px] font-bold text-[#0F172A]">Hisobni to&apos;ldirish</h3>
+            <p className="mt-2 text-[14px] text-[#64748B]">
+              Monetka sotib olish uchun admin bilan bog&apos;laning
+            </p>
+            <div className="mt-4 space-y-2">
+              {telegramUrl && (
+                <a
+                  href={telegramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0088cc] text-[14px] font-bold text-white"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Telegram
+                </a>
+              )}
+              {whatsappUrl && (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#25D366] text-[14px] font-bold text-white"
+                >
+                  WhatsApp
+                </a>
+              )}
+              {contact.phone && (
+                <a
+                  href={`tel:${contact.phone}`}
+                  className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-primary text-[14px] font-bold text-white"
+                >
+                  {contact.phone}
+                </a>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setTopUpOpen(false)}
+              className="mt-3 h-11 w-full rounded-2xl bg-[#F1F5F9] text-[14px] font-bold text-[#64748B]"
+            >
+              Yopish
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import { isBuildPhase } from "@/lib/runtime";
+import { memCacheGet, memCacheSet, memCacheDel } from "@/lib/memory-cache";
 
 let redis: Redis | null = null;
 
@@ -54,12 +55,18 @@ export async function rateLimit(
 }
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
+  const fromMemory = memCacheGet<T>(key);
+  if (fromMemory !== null) return fromMemory;
+
   const client = getRedis();
   if (!client) return null;
 
   try {
     const data = await client.get(key);
-    return data ? (JSON.parse(data) as T) : null;
+    if (!data) return null;
+    const parsed = JSON.parse(data) as T;
+    memCacheSet(key, parsed, 60);
+    return parsed;
   } catch {
     return null;
   }
@@ -70,6 +77,8 @@ export async function cacheSet(
   value: unknown,
   ttlSeconds: number
 ): Promise<void> {
+  memCacheSet(key, value, ttlSeconds);
+
   const client = getRedis();
   if (!client) return;
 
@@ -81,11 +90,31 @@ export async function cacheSet(
 }
 
 export async function cacheDel(key: string): Promise<void> {
+  memCacheDel(key);
+
   const client = getRedis();
   if (!client) return;
 
   try {
     await client.del(key);
+  } catch {
+    // Cache failures are non-critical
+  }
+}
+
+export async function cacheDelByPrefix(prefix: string): Promise<void> {
+  const client = getRedis();
+  if (!client) return;
+
+  try {
+    const stream = client.scanStream({ match: `${prefix}*`, count: 100 });
+    const keys: string[] = [];
+    for await (const batch of stream) {
+      keys.push(...(batch as string[]));
+    }
+    if (keys.length > 0) {
+      await client.del(...keys);
+    }
   } catch {
     // Cache failures are non-critical
   }
