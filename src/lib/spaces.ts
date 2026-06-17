@@ -1,23 +1,27 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const s3Client = new S3Client({
-  endpoint: process.env.DO_SPACES_ENDPOINT,
-  region: process.env.DO_SPACES_REGION || "fra1",
+  endpoint: process.env.SPACES_ENDPOINT,
+  region: process.env.SPACES_REGION || "fra1",
   credentials: {
-    accessKeyId: process.env.DO_SPACES_KEY || "",
-    secretAccessKey: process.env.DO_SPACES_SECRET || "",
+    accessKeyId: process.env.SPACES_KEY || "",
+    secretAccessKey: process.env.SPACES_SECRET || "",
   },
   forcePathStyle: false,
 });
 
-const bucket = process.env.DO_SPACES_BUCKET || "";
-const cdnUrl = process.env.DO_SPACES_CDN_URL || "";
+const bucket = process.env.SPACES_BUCKET || "";
+const cdnUrl = process.env.SPACES_CDN_URL || "";
+
+if (!process.env.SPACES_BUCKET) {
+  throw new Error("SPACES_BUCKET missing");
+}
 
 export function getPublicUrl(key: string): string {
   if (cdnUrl) {
     return `${cdnUrl}/${key}`;
   }
-  return `${process.env.DO_SPACES_ENDPOINT}/${bucket}/${key}`;
+  return `${process.env.SPACES_ENDPOINT}/${bucket}/${key}`;
 }
 
 export async function uploadToSpaces(
