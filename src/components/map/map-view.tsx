@@ -9,6 +9,8 @@ import "@/styles/map-markers.css";
 import { MAP_CENTER, MAP_ZOOM } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 import { findCategory } from "@/lib/category-helpers";
+import { getEmoji3dUrl } from "@/lib/emoji-3d";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 import {
   createClusterGroupOptions,
   createSingleCircleIcon,
@@ -90,12 +92,21 @@ export function MapView({
       const icon = createSingleCircleIcon(false);
       const marker = L.marker([ad.latitude, ad.longitude], { icon });
 
+      const categoryEmojiHtml = categoryInfo?.emoji
+        ? (() => {
+            const url = getEmoji3dUrl(categoryInfo.emoji);
+            return url
+              ? `<img src="${url}" alt="" style="width:14px;height:14px;vertical-align:-2px;object-fit:contain;display:inline;" />`
+              : categoryInfo.emoji;
+          })()
+        : "";
+
       const popupContent = `
         <div style="min-width: 200px; font-family: system-ui, sans-serif;">
           ${ad.thumbUrl ? `<img src="${ad.thumbUrl}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 12px; margin-bottom: 8px;" />` : ""}
           <h3 style="margin: 0 0 4px; font-size: 14px; font-weight: 600;">${ad.title}</h3>
-          <p style="margin: 0 0 4px; font-size: 16px; font-weight: 700; color: #2563EB;">${formatPrice(ad.price)}</p>
-          <p style="margin: 0; font-size: 12px; color: #666;">${categoryInfo?.emoji || ""} ${ad.district}</p>
+          <p style="margin: 0 0 4px; font-size: 16px; font-weight: 700; color: #2563EB;">${formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}</p>
+          <p style="margin: 0; font-size: 12px; color: #666;">${categoryEmojiHtml} ${ad.district}</p>
           <a href="/ads/${ad.id}" style="display: inline-block; margin-top: 8px; color: #2563EB; font-size: 13px; text-decoration: none; font-weight: 600;">Batafsil →</a>
         </div>
       `;
@@ -159,11 +170,12 @@ export function MapView({
                   <button
                     key={cat.slug}
                     onClick={() => onCategoryChange(cat.slug)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                       category === cat.slug ? "bg-primary text-white" : "bg-secondary text-gray-600"
                     }`}
                   >
-                    {cat.emoji} {cat.label}
+                    <CategoryEmoji emoji={cat.emoji} size={14} />
+                    {cat.label}
                   </button>
                 ))}
               </div>
@@ -187,14 +199,14 @@ export function MapView({
                       className="h-16 w-16 rounded-xl object-cover"
                     />
                   ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-secondary text-2xl">
-                      {cat?.emoji}
+                    <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-secondary">
+                      {cat?.emoji && <CategoryEmoji emoji={cat.emoji} size={32} />}
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate font-medium">{ad.title}</h3>
                     <p className="text-sm font-bold text-primary">
-                      {formatPrice(ad.price)}
+                      {formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}
                     </p>
                     <p className="text-xs text-gray-500">{ad.district}</p>
                   </div>

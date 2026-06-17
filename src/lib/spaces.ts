@@ -56,7 +56,14 @@ export function extractKeyFromUrl(url: string): string | null {
   try {
     const urlObj = new URL(url);
     const path = urlObj.pathname.replace(/^\//, "");
-    return path.includes("/") ? path.split("/").slice(1).join("/") : path;
+    if (!path) return null;
+
+    const bucketPrefix = `${bucket}/`;
+    if (path.startsWith(bucketPrefix)) {
+      return path.slice(bucketPrefix.length);
+    }
+
+    return path;
   } catch {
     return null;
   }

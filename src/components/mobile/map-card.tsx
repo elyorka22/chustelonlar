@@ -43,7 +43,7 @@ export function MapCard({ ad, onClose }: MapCardProps) {
                   {ad.title}
                 </h3>
                 <p className="text-[16px] font-extrabold text-primary">
-                  {formatPrice(ad.price)}
+                  {formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}
                 </p>
                 <p className="flex items-center gap-1 text-[12px] text-gray-500">
                   <MapPin className="h-3 w-3" />

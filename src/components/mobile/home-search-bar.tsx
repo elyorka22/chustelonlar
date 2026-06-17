@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { SlidersHorizontal, Plus } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PwaInstallButton } from "@/components/pwa/pwa-install-button";
 
 export function HomeSearchBar() {
   const router = useRouter();
@@ -36,13 +37,7 @@ export function HomeSearchBar() {
         />
       </form>
 
-      <Link
-        href="/create"
-        className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-2xl bg-gray-900 px-4 text-[14px] font-bold text-white active:scale-95 transition-transform"
-      >
-        <Plus className="h-4 w-4" strokeWidth={2.5} />
-        E&apos;lon
-      </Link>
+      <PwaInstallButton />
     </div>
   );
 }

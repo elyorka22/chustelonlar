@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
   Phone,
@@ -24,6 +23,7 @@ import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import type { AdWithImages, CategoryData } from "@/types";
 import { findCategory } from "@/lib/category-helpers";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 
 const MiniMap = dynamic(
   () => import("@/components/mobile/mobile-map-view").then((m) => m.MiniMap),
@@ -78,7 +78,7 @@ export function AdDetailMobile({
   };
 
   return (
-    <div className="bg-secondary/30 pb-28">
+    <div className="bg-secondary/30">
       <MobileHeader showBack backHref="/ads" />
 
       {/* Image carousel */}
@@ -93,8 +93,8 @@ export function AdDetailMobile({
             sizes="100vw"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-6xl">
-            {category?.emoji}
+          <div className="flex h-full items-center justify-center">
+            {category?.emoji && <CategoryEmoji emoji={category.emoji} size={64} />}
           </div>
         )}
         <div className="absolute right-3 top-3 flex gap-2">
@@ -141,23 +141,77 @@ export function AdDetailMobile({
             <h1 className="text-[18px] font-bold leading-snug text-gray-900">
               {ad.title}
             </h1>
-            {ad.price === 0 && (
+            {ad.priceNegotiable && (
               <span className="flex-shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-700">
                 Kelishiladi
               </span>
             )}
           </div>
           <p className="mt-2 text-[28px] font-extrabold text-primary">
-            {formatPrice(ad.price)}
+            {formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}
           </p>
           <div className="mt-3 flex flex-wrap gap-3 text-[13px] text-gray-500">
             <span className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
               {ad.district}
             </span>
-            <span>{category?.emoji} {category?.label}</span>
+            <span className="inline-flex items-center gap-1">
+              {category?.emoji && <CategoryEmoji emoji={category.emoji} size={16} />}
+              {category?.label}
+            </span>
             <span>{formatRelativeDate(ad.createdAt)}</span>
             <span>{ad.views} ko&apos;rish</span>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+            <a
+              href={`tel:${ad.phone}`}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3 text-[13px] font-semibold text-white transition-transform active:scale-[0.98]"
+            >
+              <Phone className="h-4 w-4" />
+              Qo&apos;ng&apos;iroq
+            </a>
+            <a
+              href={`tel:${ad.phone}`}
+              className="text-[14px] font-semibold text-gray-900"
+            >
+              {ad.phone}
+            </a>
+            {ad.telegram && (
+              <a
+                href={`https://t.me/${ad.telegram}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 text-[13px] font-semibold text-primary transition-transform active:scale-[0.98]"
+              >
+                <Send className="h-4 w-4" />
+                Telegram
+              </a>
+            )}
+            <DialogRoot open={reportOpen} onOpenChange={setReportOpen}>
+              <DialogTrigger asChild>
+                <button className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 text-[13px] font-medium text-gray-600 transition-transform active:scale-[0.98]">
+                  <Flag className="h-4 w-4" />
+                  Shikoyat
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogTitle>Shikoyat</DialogTitle>
+                <Textarea
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  placeholder="Sababini yozing..."
+                  className="mt-4"
+                  rows={4}
+                />
+                <button
+                  onClick={handleReport}
+                  className="mt-4 h-11 w-full rounded-2xl bg-primary text-sm font-bold text-white"
+                >
+                  Yuborish
+                </button>
+              </DialogContent>
+            </DialogRoot>
           </div>
         </motion.div>
 
@@ -190,53 +244,6 @@ export function AdDetailMobile({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Sticky bottom CTA */}
-      <div className="fixed bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 border-t border-gray-100 bg-white/95 px-4 py-3 backdrop-blur-md md:bottom-0">
-        <div className="mx-auto flex max-w-lg gap-2">
-          <a
-            href={`tel:${ad.phone}`}
-            className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-white shadow-lg shadow-primary/25 active:scale-[0.98] transition-transform"
-          >
-            <Phone className="h-5 w-5" />
-            Qo&apos;ng&apos;iroq
-          </a>
-          {ad.telegram && (
-            <a
-              href={`https://t.me/${ad.telegram}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-white text-[15px] font-bold text-primary active:scale-[0.98] transition-transform"
-            >
-              <Send className="h-5 w-5" />
-              Telegram
-            </a>
-          )}
-          <DialogRoot open={reportOpen} onOpenChange={setReportOpen}>
-            <DialogTrigger asChild>
-              <button className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-secondary">
-                <Flag className="h-5 w-5 text-gray-500" />
-              </button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogTitle>Shikoyat</DialogTitle>
-              <Textarea
-                value={reportReason}
-                onChange={(e) => setReportReason(e.target.value)}
-                placeholder="Sababini yozing..."
-                className="mt-4"
-                rows={4}
-              />
-              <button
-                onClick={handleReport}
-                className="mt-4 h-[52px] w-full rounded-2xl bg-primary font-bold text-white"
-              >
-                Yuborish
-              </button>
-            </DialogContent>
-          </DialogRoot>
-        </div>
       </div>
     </div>
   );

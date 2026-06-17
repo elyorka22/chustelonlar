@@ -23,6 +23,8 @@ export default async function AdminAdsPage() {
         id: ad.id,
         title: ad.title,
         price: ad.price,
+        priceCurrency: ad.priceCurrency as "UZS" | "USD",
+        priceNegotiable: ad.priceNegotiable,
         category: ad.category,
         district: ad.district,
         createdAt: ad.createdAt,

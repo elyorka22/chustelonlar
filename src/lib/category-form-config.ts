@@ -17,12 +17,12 @@ export interface CategoryFormConfig {
 }
 
 const AUTOMOBILES: CategoryFormConfig = {
-  titlePlaceholder: "Masalan: Toyota Camry 2018",
+  titlePlaceholder: "Masalan: Chevrolet Cobalt 2020",
   descriptionPlaceholder: "Holati, komplektatsiya, xizmat tarixi...",
   descriptionHint: "Avtomobil haqida batafsil yozing",
   fields: [
-    { key: "brand", label: "Marka", placeholder: "Toyota", type: "text", required: true },
-    { key: "model", label: "Model", placeholder: "Camry", type: "text", required: true },
+    { key: "brand", label: "Marka", placeholder: "Chevrolet", type: "text", required: true },
+    { key: "model", label: "Model", placeholder: "Cobalt", type: "text", required: true },
     { key: "year", label: "Ishlab chiqarilgan yil", placeholder: "2018", type: "number", required: true },
     {
       key: "mileage",

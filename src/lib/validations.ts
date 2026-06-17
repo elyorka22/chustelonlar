@@ -18,9 +18,11 @@ export const createAdSchema = z.object({
     .number()
     .min(0, "Narx manfiy bo'lishi mumkin emas")
     .max(999999999999, "Narx juda katta"),
+  priceCurrency: z.enum(["UZS", "USD"]).default("UZS"),
+  priceNegotiable: z.boolean().default(false),
   latitude: z.number().min(40.9).max(41.2),
   longitude: z.number().min(71.1).max(71.4),
-  district: z.string().min(2).max(100),
+  district: z.string().min(2).max(100).default("Chust"),
   phone: z
     .string()
     .min(9, "Telefon raqam noto'g'ri")

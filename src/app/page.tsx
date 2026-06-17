@@ -8,18 +8,23 @@ import { PromoBanner } from "@/components/mobile/promo-banner";
 import { CategoryGridCard } from "@/components/mobile/category-grid-card";
 import { AdCardHorizontal } from "@/components/mobile/ad-card-horizontal";
 import { AdCardGrid } from "@/components/mobile/ad-card-grid";
-import { getLatestAds } from "@/lib/services/ads";
+import { getLatestAds, getAds } from "@/lib/services/ads";
 import { getActiveCategories } from "@/lib/services/categories";
 
 export default async function HomePage() {
   let latestAds: Awaited<ReturnType<typeof getLatestAds>> = [];
+  let allAds: Awaited<ReturnType<typeof getAds>>["data"] = [];
   let categories: Awaited<ReturnType<typeof getActiveCategories>> = [];
 
   try {
-    [latestAds, categories] = await Promise.all([
-      getLatestAds(12),
+    const [latest, allResult, cats] = await Promise.all([
+      getLatestAds(8),
+      getAds({ limit: "50" }),
       getActiveCategories(),
     ]);
+    latestAds = latest;
+    allAds = allResult.data;
+    categories = cats;
   } catch {
     // DB unavailable
   }
@@ -71,8 +76,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Ads */}
-      <section className="pt-6 pb-8 md:mx-auto md:max-w-4xl">
+      {/* Latest ads carousel */}
+      <section className="pt-6 md:mx-auto md:max-w-4xl">
         <div className="mb-3 flex items-center justify-between px-4">
           <h2 className="text-[18px] font-bold text-gray-900">
             Yangi e&apos;lonlar
@@ -83,30 +88,48 @@ export default async function HomePage() {
         </div>
 
         {latestAds.length > 0 ? (
-          <>
-            <div className="flex gap-3 overflow-x-auto px-4 pb-4 snap-x snap-mandatory scrollbar-hide md:hidden">
-              {latestAds.map((ad, i) => (
-                <AdCardHorizontal
-                  key={ad.id}
-                  ad={ad}
-                  categories={categories}
-                  index={i}
-                />
-              ))}
-            </div>
-
-            <div className="hidden gap-3 px-4 md:grid md:grid-cols-4">
-              {latestAds.map((ad, i) => (
-                <AdCardGrid key={ad.id} ad={ad} categories={categories} index={i} />
-              ))}
-            </div>
-          </>
+          <div className="flex gap-2 overflow-x-auto px-4 pb-3 snap-x snap-mandatory scrollbar-hide md:hidden">
+            {latestAds.map((ad, i) => (
+              <AdCardHorizontal
+                key={ad.id}
+                ad={ad}
+                categories={categories}
+                index={i}
+              />
+            ))}
+          </div>
         ) : (
           <div className="mx-4 rounded-[20px] bg-secondary py-12 text-center text-gray-500">
             Hozircha e&apos;lonlar yo&apos;q
           </div>
         )}
       </section>
+
+      {/* All ads grid */}
+      {allAds.length > 0 && (
+        <section className="pt-4 pb-8 md:mx-auto md:max-w-4xl">
+          <div className="mb-3 px-4">
+            <h2 className="text-[18px] font-bold text-gray-900">
+              Barcha e&apos;lonlar
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5 px-4 md:grid-cols-4 md:gap-3">
+            {allAds.map((ad, i) => (
+              <AdCardGrid key={ad.id} ad={ad} categories={categories} index={i} />
+            ))}
+          </div>
+
+          <div className="mt-4 px-4 text-center">
+            <Link
+              href="/ads"
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-secondary px-6 text-[13px] font-semibold text-gray-700"
+            >
+              Barcha e&apos;lonlarni ko&apos;rish
+            </Link>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

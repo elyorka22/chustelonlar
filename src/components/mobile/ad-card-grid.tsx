@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { formatPrice } from "@/lib/utils";
 import type { AdWithImages, CategoryData } from "@/types";
 import { findCategory } from "@/lib/category-helpers";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 
 interface AdCardGridProps {
   ad: AdWithImages;
@@ -37,8 +38,8 @@ export function AdCardGrid({ ad, categories = [], index = 0 }: AdCardGridProps) 
                 sizes="(max-width: 768px) 50vw, 200px"
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-3xl">
-                {category?.emoji}
+              <div className="flex h-full items-center justify-center">
+                {category?.emoji && <CategoryEmoji emoji={category.emoji} size={40} />}
               </div>
             )}
             <button
@@ -54,7 +55,7 @@ export function AdCardGrid({ ad, categories = [], index = 0 }: AdCardGridProps) 
               {ad.title}
             </h3>
             <p className="mt-1.5 text-[15px] font-extrabold text-primary">
-              {formatPrice(ad.price)}
+              {formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}
             </p>
             <p className="mt-1 flex items-center gap-1 text-[11px] text-gray-500">
               <MapPin className="h-3 w-3" />

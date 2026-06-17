@@ -17,6 +17,7 @@ import {
   CATEGORY_EMOJI_PRESETS,
   CATEGORY_ICON_BGS,
 } from "@/lib/category-helpers";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 import type { CategoryData } from "@/types";
 
 interface AdminCategoriesClientProps {
@@ -285,7 +286,7 @@ export function AdminCategoriesClient({
                             : "bg-[#F8FAFC]"
                         )}
                       >
-                        {emoji}
+                        <CategoryEmoji emoji={emoji} size={28} />
                       </button>
                     ))}
                   </div>

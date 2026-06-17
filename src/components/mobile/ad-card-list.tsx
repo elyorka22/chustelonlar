@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { formatPrice, formatDate } from "@/lib/utils";
 import type { AdWithImages, CategoryData } from "@/types";
 import { findCategory } from "@/lib/category-helpers";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 
 interface AdCardListProps {
   ad: AdWithImages;
@@ -37,8 +38,8 @@ export function AdCardList({ ad, categories = [], index = 0 }: AdCardListProps) 
                 sizes="88px"
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-2xl">
-                {category?.emoji}
+              <div className="flex h-full items-center justify-center">
+                {category?.emoji && <CategoryEmoji emoji={category.emoji} size={32} />}
               </div>
             )}
           </div>
@@ -47,7 +48,7 @@ export function AdCardList({ ad, categories = [], index = 0 }: AdCardListProps) 
               {ad.title}
             </h3>
             <p className="mt-1 text-[16px] font-extrabold text-primary">
-              {formatPrice(ad.price)}
+              {formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}
             </p>
             <div className="mt-1.5 flex items-center gap-3 text-[11px] text-gray-500">
               <span className="flex items-center gap-0.5">

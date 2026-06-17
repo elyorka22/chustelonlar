@@ -72,7 +72,13 @@ export function ProfileMobile({ user, ads, stats }: ProfileMobileProps) {
   };
 
   const handleDelete = async (adId: string) => {
-    if (!confirm("O'chirmoqchimisiz?")) return;
+    if (
+      !confirm(
+        "E'lonni o'chirmoqchimisiz? Rasmlar 24 soat ichida serverdan ham o'chiriladi."
+      )
+    ) {
+      return;
+    }
     const result = await removeAd(adId);
     if (result.error) {
       toast.error(result.error);
@@ -263,7 +269,7 @@ export function ProfileMobile({ user, ads, stats }: ProfileMobileProps) {
                         </span>
                       </div>
                       <p className="mt-2 text-[16px] font-extrabold text-primary">
-                        {formatPrice(ad.price)}
+                        {formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}
                       </p>
                       <div className="mt-1.5 flex items-center gap-3 text-[11px] font-medium text-[#94A3B8]">
                         <span className="flex items-center gap-1">
@@ -275,8 +281,8 @@ export function ProfileMobile({ user, ads, stats }: ProfileMobileProps) {
                     </div>
                   </Link>
 
-                  {ad.status === "APPROVED" && (
-                    <div className="flex gap-2 border-t border-[#F1F5F9] px-3.5 py-2.5">
+                  <div className="flex gap-2 border-t border-[#F1F5F9] px-3.5 py-2.5">
+                    {ad.status === "APPROVED" && (
                       <button
                         type="button"
                         onClick={() => handleMarkSold(ad.id)}
@@ -284,15 +290,18 @@ export function ProfileMobile({ user, ads, stats }: ProfileMobileProps) {
                       >
                         Sotildi deb belgilash
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(ad.id)}
-                        className="rounded-xl bg-red-50 px-4 py-2.5 text-[12px] font-bold text-red-600 ring-1 ring-red-100"
-                      >
-                        O&apos;chirish
-                      </button>
-                    </div>
-                  )}
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(ad.id)}
+                      className={cn(
+                        "rounded-xl bg-red-50 py-2.5 text-[12px] font-bold text-red-600 ring-1 ring-red-100",
+                        ad.status === "APPROVED" ? "px-4" : "flex-1"
+                      )}
+                    >
+                      O&apos;chirish
+                    </button>
+                  </div>
                 </motion.article>
               ))
             )}

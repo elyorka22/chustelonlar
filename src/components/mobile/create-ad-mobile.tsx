@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MobileHeader } from "@/components/mobile/mobile-header";
 import { UploadBox } from "@/components/mobile/upload-box";
-import { DISTRICTS, MAP_CENTER } from "@/lib/constants";
+import { MAP_CENTER } from "@/lib/constants";
 import { submitAd } from "@/lib/actions";
 import {
   getCategoryFormConfig,
@@ -14,6 +14,7 @@ import {
   validateCategoryExtras,
 } from "@/lib/category-form-config";
 import { findCategory } from "@/lib/category-helpers";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { CategoryData } from "@/types";
@@ -49,7 +50,7 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
     description: "",
     category: "",
     price: "",
-    district: "",
+    priceCurrency: "UZS" as "UZS" | "USD",
     phone: "",
     telegram: "",
     negotiable: false,
@@ -107,7 +108,7 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
   const canProceed = () => {
     if (step === 1) {
       if (!hasValidCategory) return false;
-      if (!form.title || !form.description || !form.district || !form.phone) {
+      if (!form.title || !form.description || !form.phone) {
         return false;
       }
       if (!form.negotiable && !form.price) return false;
@@ -159,9 +160,11 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
       description,
       category: form.category,
       price: form.negotiable ? 0 : parseFloat(form.price),
+      priceCurrency: form.priceCurrency,
+      priceNegotiable: form.negotiable,
       latitude: location.lat,
       longitude: location.lng,
-      district: form.district,
+      district: "Chust",
       phone: form.phone,
       telegram: form.telegram || undefined,
       imageIds: images.map((img) => img.fullUrl),
@@ -236,7 +239,7 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
                             : "border-transparent bg-white card-shadow"
                         )}
                       >
-                        <span className="text-2xl">{cat.emoji}</span>
+                        <CategoryEmoji emoji={cat.emoji} size={28} />
                         <span className="text-[13px] font-bold leading-tight text-gray-900">
                           {cat.shortLabel}
                         </span>
@@ -307,16 +310,41 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
 
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-gray-700">
-                  Narx (so&apos;m)
+                  Narx
                 </label>
-                <input
-                  type="number"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  placeholder="1000000"
-                  disabled={form.negotiable}
-                  className={inputClass}
-                />
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <input
+                    type="number"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    placeholder={form.priceCurrency === "USD" ? "10000" : "100000000"}
+                    disabled={form.negotiable}
+                    className={inputClass}
+                  />
+                  <div className="flex rounded-2xl bg-secondary p-1">
+                    {[
+                      { value: "UZS", label: "so'm" },
+                      { value: "USD", label: "$" },
+                    ].map((currency) => (
+                      <button
+                        key={currency.value}
+                        type="button"
+                        disabled={form.negotiable}
+                        onClick={() =>
+                          setForm({ ...form, priceCurrency: currency.value as "UZS" | "USD" })
+                        }
+                        className={cn(
+                          "h-11 rounded-xl px-3 text-[13px] font-bold transition-all disabled:opacity-50",
+                          form.priceCurrency === currency.value
+                            ? "bg-white text-primary shadow-sm"
+                            : "text-gray-500"
+                        )}
+                      >
+                        {currency.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <label className="mt-2 flex items-center gap-2 text-[13px] text-gray-600">
                   <input
                     type="checkbox"
@@ -324,7 +352,7 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
                     onChange={(e) => setForm({ ...form, negotiable: e.target.checked })}
                     className="h-4 w-4 rounded accent-primary"
                   />
-                  Kelishiladi
+                  Narx kelishiladi
                 </label>
               </div>
 
@@ -342,24 +370,6 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
                   rows={5}
                   className="w-full rounded-2xl bg-secondary px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-primary/20"
                 />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-[13px] font-semibold text-gray-700">
-                  Tuman
-                </label>
-                <select
-                  value={form.district}
-                  onChange={(e) => setForm({ ...form, district: e.target.value })}
-                  className={inputClass}
-                >
-                  <option value="">Tanlang</option>
-                  {DISTRICTS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <div>

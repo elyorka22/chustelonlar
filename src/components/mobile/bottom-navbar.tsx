@@ -18,9 +18,8 @@ export function BottomNavbar() {
   const pathname = usePathname();
 
   const hiddenOn = ["/login", "/register"];
-  const isAdDetail = /^\/ads\/[^/]+$/.test(pathname);
   const isAdmin = pathname.startsWith("/admin");
-  if (hiddenOn.some((p) => pathname.startsWith(p)) || isAdDetail || isAdmin) return null;
+  if (hiddenOn.some((p) => pathname.startsWith(p)) || isAdmin) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">

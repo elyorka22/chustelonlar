@@ -19,6 +19,7 @@ import { APP_NAME } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores";
 import { cn } from "@/lib/utils";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 
 const navLinks = [
   { href: "/ads", label: "E'lonlar" },
@@ -171,10 +172,10 @@ export function Footer() {
           <div>
             <h4 className="font-semibold">Kategoriyalar</h4>
             <ul className="mt-3 space-y-2 text-sm text-gray-500">
-              <li>🚗 Avtomobillar</li>
-              <li>🏠 Ko&apos;chmas mulk</li>
-              <li>📦 Sotiladigan buyumlar</li>
-              <li>📢 Boshqa e&apos;lonlar</li>
+              <li className="flex items-center gap-2"><CategoryEmoji emoji="🚙" size={16} /> Avtomobillar</li>
+              <li className="flex items-center gap-2"><CategoryEmoji emoji="🏡" size={16} /> Ko&apos;chmas mulk</li>
+              <li className="flex items-center gap-2"><CategoryEmoji emoji="📦" size={16} /> Sotiladigan buyumlar</li>
+              <li className="flex items-center gap-2"><CategoryEmoji emoji="📮" size={16} /> Boshqa e&apos;lonlar</li>
             </ul>
           </div>
         </div>

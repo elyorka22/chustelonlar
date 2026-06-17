@@ -6,11 +6,14 @@ import { Check, X, Eye, MapPin, Clock } from "lucide-react";
 import { formatPrice, formatRelativeDate } from "@/lib/utils";
 import type { CategoryData } from "@/types";
 import { findCategory } from "@/lib/category-helpers";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 
 interface ModerationCardProps {
   id: string;
   title: string;
   price: number;
+  priceCurrency: "UZS" | "USD";
+  priceNegotiable: boolean;
   category: string;
   categories?: CategoryData[];
   district: string;
@@ -26,6 +29,8 @@ export function ModerationCard({
   id,
   title,
   price,
+  priceCurrency,
+  priceNegotiable,
   category,
   district,
   createdAt,
@@ -50,15 +55,15 @@ export function ModerationCard({
           {thumbUrl ? (
             <img src={thumbUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-2xl">
-              {cat?.emoji || "📦"}
+            <div className="flex h-full w-full items-center justify-center">
+              <CategoryEmoji emoji={cat?.emoji || "📦"} size={32} />
             </div>
           )}
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-bold text-[#0F172A]">{title}</h3>
           <p className="mt-0.5 text-base font-extrabold text-primary">
-            {formatPrice(price)}
+            {formatPrice(price, priceCurrency, priceNegotiable)}
           </p>
           <div className="mt-1 flex items-center gap-1 text-xs text-[#64748B]">
             <MapPin className="h-3 w-3" />

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 
 interface CategoryGridCardProps {
   label: string;
@@ -52,7 +53,7 @@ export function CategoryGridCard({
               className="h-full w-full object-cover object-center drop-shadow-md"
             />
           ) : (
-            <span className="pb-1 pr-1 text-[44px] leading-none drop-shadow-sm">{emoji}</span>
+            <CategoryEmoji emoji={emoji} size={44} className="pb-1 pr-1" />
           )}
         </div>
       </Link>

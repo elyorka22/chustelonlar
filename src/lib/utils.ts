@@ -7,7 +7,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatPrice(price: number): string {
+export function formatPrice(
+  price: number,
+  currency: "UZS" | "USD" = "UZS",
+  negotiable = false
+): string {
+  if (negotiable) {
+    return "Narx kelishiladi";
+  }
+
+  if (currency === "USD") {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(price);
+  }
+
   return new Intl.NumberFormat("uz-UZ", {
     style: "currency",
     currency: "UZS",

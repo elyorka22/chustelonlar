@@ -42,7 +42,13 @@ export function DashboardClient({ ads, stats }: DashboardClientProps) {
   };
 
   const handleDelete = async (adId: string) => {
-    if (!confirm("E'lonni o'chirmoqchimisiz?")) return;
+    if (
+      !confirm(
+        "E'lonni o'chirmoqchimisiz? Rasmlar 24 soat ichida serverdan ham o'chiriladi."
+      )
+    ) {
+      return;
+    }
     const result = await removeAd(adId);
     if (result.error) {
       toast.error(result.error);
@@ -120,7 +126,9 @@ export function DashboardClient({ ads, stats }: DashboardClientProps) {
                         {AD_STATUS_LABELS[ad.status]}
                       </Badge>
                     </div>
-                    <p className="text-primary font-bold">{formatPrice(ad.price)}</p>
+                    <p className="text-primary font-bold">
+                      {formatPrice(ad.price, ad.priceCurrency, ad.priceNegotiable)}
+                    </p>
                     <p className="text-sm text-gray-500">
                       {ad.views} ko&apos;rish · {formatRelativeDate(ad.createdAt)}
                     </p>

@@ -20,6 +20,8 @@ export interface AdWithImages {
   description: string;
   category: string;
   price: number;
+  priceCurrency: "UZS" | "USD";
+  priceNegotiable: boolean;
   latitude: number;
   longitude: number;
   district: string;
@@ -49,6 +51,8 @@ export interface MapAdMarker {
   id: string;
   title: string;
   price: number;
+  priceCurrency: "UZS" | "USD";
+  priceNegotiable: boolean;
   category: string;
   district: string;
   latitude: number;

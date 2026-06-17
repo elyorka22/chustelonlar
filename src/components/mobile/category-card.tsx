@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { CategoryEmoji } from "@/components/ui/category-emoji";
 
 interface CategoryCardProps {
   emoji: string;
@@ -43,7 +44,7 @@ export function CategoryCard({
               className="h-full w-full object-cover"
             />
           ) : (
-            emoji
+            <CategoryEmoji emoji={emoji} size={32} />
           )}
         </div>
         <span className="text-center text-xs font-semibold text-gray-800 leading-tight">

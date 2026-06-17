@@ -90,9 +90,11 @@ export async function removeAd(adId: string) {
   if (!session?.user?.id) return { error: "Avtorizatsiya talab qilinadi" };
 
   const result = await deleteAd(adId, session.user.id);
-  if (!result) return { error: "E'lon topilmadi" };
+  if (!result) return { error: "E'lon topilmadi yoki allaqachon o'chirilgan" };
 
   revalidatePath("/dashboard");
+  revalidatePath("/ads");
+  revalidatePath(`/ads/${adId}`);
   return { success: true };
 }
 
@@ -221,8 +223,31 @@ export async function moderateAd(
     return { error: "Ruxsat yo'q" };
   }
 
+  const ad = await getPrisma().ad.findUnique({
+    where: { id: adId },
+    select: { title: true, createdById: true },
+  });
+
+  if (!ad) {
+    return { error: "E'lon topilmadi" };
+  }
+
   const status = action === "approve" ? "APPROVED" : "REJECTED";
   await updateAdStatus(adId, status);
+
+  const { sendPushToUser } = await import("@/lib/services/push-subscriptions");
+  void sendPushToUser(ad.createdById, {
+    title:
+      action === "approve"
+        ? "E'loningiz tasdiqlandi"
+        : "E'loningiz rad etildi",
+    body:
+      action === "approve"
+        ? `"${ad.title}" endi saytda ko'rinadi`
+        : `"${ad.title}" — qayta tahrir qilishingiz mumkin`,
+    url: action === "approve" ? `/ads/${adId}` : "/dashboard",
+  });
+
   revalidatePath("/admin");
   revalidatePath("/admin/ads");
   revalidatePath("/ads");
@@ -239,6 +264,8 @@ export async function adminDeleteAd(adId: string) {
   revalidatePath("/admin");
   revalidatePath("/admin/ads");
   revalidatePath("/admin/reports");
+  revalidatePath("/ads");
+  revalidatePath(`/ads/${adId}`);
   return { success: true };
 }
 

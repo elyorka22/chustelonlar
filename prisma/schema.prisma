@@ -54,6 +54,7 @@ model User {
   ads       Ad[]
   favorites Favorite[]
   reports   Report[]
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -104,6 +105,8 @@ model Ad {
   description String     @db.Text
   category    String
   price       Float
+  priceCurrency   String  @default("UZS") @map("price_currency")
+  priceNegotiable Boolean @default(false) @map("price_negotiable")
   latitude    Float
   longitude   Float
   district    String
@@ -111,10 +114,12 @@ model Ad {
   telegram    String?
   status      AdStatus   @default(PENDING)
   isPremium   Boolean    @default(false) @map("is_premium")
-  views       Int        @default(0)
-  createdById String     @map("created_by")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt
+  views          Int        @default(0)
+  deletedAt      DateTime?  @map("deleted_at")
+  imagesPurgedAt DateTime?  @map("images_purged_at")
+  createdById    String     @map("created_by")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt
 
   createdBy User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
   categoryRef Category @relation(fields: [category], references: [slug])
@@ -167,4 +172,18 @@ model Report {
 
   @@index([adId])
   @@map("reports")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique @db.Text
+  p256dh    String   @map("p256dh")
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

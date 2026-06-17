@@ -122,6 +122,8 @@ export async function getMapAds(
       id: true,
       title: true,
       price: true,
+      priceCurrency: true,
+      priceNegotiable: true,
       category: true,
       district: true,
       latitude: true,
@@ -138,6 +140,8 @@ export async function getMapAds(
     id: ad.id,
     title: ad.title,
     price: ad.price,
+    priceCurrency: ad.priceCurrency as "UZS" | "USD",
+    priceNegotiable: ad.priceNegotiable,
     category: ad.category,
     district: ad.district,
     latitude: ad.latitude,
@@ -202,6 +206,8 @@ export async function createAd(
       description: sanitizeText(data.description),
       category: data.category,
       price: data.price,
+      priceCurrency: data.priceCurrency,
+      priceNegotiable: data.priceNegotiable,
       latitude: data.latitude,
       longitude: data.longitude,
       district: sanitizeText(data.district),
@@ -256,22 +262,31 @@ export async function updateAdStatus(
   adId: string,
   status: "APPROVED" | "REJECTED" | "SOLD" | "DELETED"
 ) {
+  const data: { status: typeof status; deletedAt?: Date } = { status };
+
+  if (status === "DELETED") {
+    data.deletedAt = new Date();
+  }
+
   return getPrisma().ad.update({
     where: { id: adId },
-    data: { status },
+    data,
   });
 }
 
 export async function deleteAd(adId: string, userId: string) {
   const ad = await getPrisma().ad.findFirst({
-    where: { id: adId, createdById: userId },
+    where: { id: adId, createdById: userId, status: { not: "DELETED" } },
   });
 
   if (!ad) return null;
 
   return getPrisma().ad.update({
     where: { id: adId },
-    data: { status: "DELETED" },
+    data: {
+      status: "DELETED",
+      deletedAt: new Date(),
+    },
   });
 }
 

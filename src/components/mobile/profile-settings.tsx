@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfile, updatePassword, deleteAccount } from "@/lib/actions";
+import { PushNotificationSettings } from "@/components/pwa/push-notification-settings";
 import { cn } from "@/lib/utils";
 
 interface ProfileSettingsProps {
@@ -214,6 +215,8 @@ export function ProfileSettings({ user, onProfileUpdated }: ProfileSettingsProps
           )}
         </SettingsSection>
       )}
+
+      <PushNotificationSettings />
 
       <SettingsSection title="Hisob">
         <button

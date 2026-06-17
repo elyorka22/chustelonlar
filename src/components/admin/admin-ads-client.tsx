@@ -15,6 +15,8 @@ interface PendingAd {
   id: string;
   title: string;
   price: number;
+  priceCurrency: "UZS" | "USD";
+  priceNegotiable: boolean;
   category: string;
   district: string;
   createdAt: Date;
@@ -127,6 +129,8 @@ export function AdminAdsClient({
                 id={ad.id}
                 title={ad.title}
                 price={ad.price}
+                priceCurrency={ad.priceCurrency}
+                priceNegotiable={ad.priceNegotiable}
                 category={ad.category}
                 district={ad.district}
                 createdAt={ad.createdAt}

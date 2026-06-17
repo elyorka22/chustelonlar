@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/ui/select";
 import { ProgressBar } from "@/components/ui/progress";
-import { DISTRICTS, MAX_IMAGES, MAX_IMAGE_SIZE } from "@/lib/constants";
+import { MAX_IMAGES, MAX_IMAGE_SIZE } from "@/lib/constants";
 import { MAP_CENTER } from "@/lib/constants";
 import { submitAd } from "@/lib/actions";
 import { toast } from "sonner";
@@ -42,7 +42,8 @@ export function CreateAdForm() {
     description: "",
     category: "",
     price: "",
-    district: "",
+    priceCurrency: "UZS" as "UZS" | "USD",
+    negotiable: false,
     phone: "",
     telegram: "",
   });
@@ -131,16 +132,23 @@ export function CreateAdForm() {
       return;
     }
 
+    if (!form.negotiable && !form.price) {
+      toast.error("Narxni kiriting");
+      return;
+    }
+
     setLoading(true);
 
     const result = await submitAd({
       title: form.title,
       description: form.description,
       category: form.category,
-      price: parseFloat(form.price),
+      price: form.negotiable ? 0 : parseFloat(form.price),
+      priceCurrency: form.priceCurrency,
+      priceNegotiable: form.negotiable,
       latitude: location.lat,
       longitude: location.lng,
-      district: form.district,
+      district: "Chust",
       phone: form.phone,
       telegram: form.telegram || undefined,
       imageIds: images.map((img) => img.fullUrl),
@@ -203,7 +211,7 @@ export function CreateAdForm() {
           id="title"
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          placeholder="Masalan: Toyota Camry 2018"
+          placeholder="Masalan: Chevrolet Cobalt 2020"
           required
         />
       </div>
@@ -234,29 +242,54 @@ export function CreateAdForm() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="price">Narx (so&apos;m) *</Label>
-          <Input
-            id="price"
-            type="number"
-            value={form.price}
-            onChange={(e) => setForm({ ...form, price: e.target.value })}
-            placeholder="1000000"
-            required
-            min="0"
-          />
+          <Label htmlFor="price">Narx *</Label>
+          <div className="flex gap-2">
+            <Input
+              id="price"
+              type="number"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+              placeholder={form.priceCurrency === "USD" ? "10000" : "100000000"}
+              required={!form.negotiable}
+              disabled={form.negotiable}
+              min="0"
+            />
+            <div className="flex rounded-xl bg-gray-100 p-1">
+              {[
+                { value: "UZS", label: "so'm" },
+                { value: "USD", label: "$" },
+              ].map((currency) => (
+                <button
+                  key={currency.value}
+                  type="button"
+                  disabled={form.negotiable}
+                  onClick={() =>
+                    setForm({ ...form, priceCurrency: currency.value as "UZS" | "USD" })
+                  }
+                  className={`rounded-lg px-3 text-sm font-semibold disabled:opacity-50 ${
+                    form.priceCurrency === currency.value
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {currency.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              checked={form.negotiable}
+              onChange={(e) => setForm({ ...form, negotiable: e.target.checked })}
+              className="h-4 w-4 rounded accent-primary"
+            />
+            Narx kelishiladi
+          </label>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>Tuman *</Label>
-          <SelectField
-            value={form.district}
-            onValueChange={(v) => setForm({ ...form, district: v })}
-            options={DISTRICTS.map((d) => ({ value: d, label: d }))}
-            placeholder="Tuman tanlang"
-          />
-        </div>
         <div className="space-y-2">
           <Label htmlFor="phone">Telefon *</Label>
           <Input

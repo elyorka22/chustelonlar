@@ -16,4 +16,4 @@ export const CATEGORY_ICON_BGS = [
   { value: "bg-cyan-100", label: "Moviy" },
 ] as const;
 
-export const CATEGORY_EMOJI_PRESETS = ["🚗", "🏠", "📦", "📢", "💼", "🛠️", "🐾", "👕", "📱", "🍽️"];
+export const CATEGORY_EMOJI_PRESETS = ["🚙", "🏡", "📦", "📮", "💼", "🛠️", "📱", "🛍️", "⌚", "🎧"];
