@@ -3,6 +3,8 @@ FROM node:20-alpine AS builder
 
 RUN apk add --no-cache libc6-compat openssl
 
+ENV SHARP_IGNORE_GLOBAL_LIBVIPS=1
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -39,7 +41,9 @@ CMD ["prisma", "migrate", "deploy"]
 # App runtime — Next.js standalone + Prisma Client only (no Prisma CLI)
 FROM node:20-alpine AS runner
 
-RUN apk add --no-cache libc6-compat openssl vips-dev curl
+RUN apk add --no-cache libc6-compat openssl curl
+
+ENV SHARP_IGNORE_GLOBAL_LIBVIPS=1
 
 WORKDIR /app
 
@@ -58,6 +62,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Query client + engines only — app never runs `prisma` CLI
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# sharp native binaries for image upload optimization
+COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
+COPY --from=builder /app/node_modules/@img ./node_modules/@img
 
 COPY --chmod=755 scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 
