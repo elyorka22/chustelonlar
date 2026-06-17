@@ -88,6 +88,8 @@ function BannerPreview({
   className?: string;
   badge?: ReactNode;
 }) {
+  const hasText = Boolean(title.trim() || subtitle.trim());
+
   return (
     <div
       className={cn(
@@ -105,20 +107,28 @@ function BannerPreview({
             sizes="400px"
             unoptimized={unoptimized}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20" />
+          {hasText ? (
+            <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20" />
+          ) : null}
         </>
       ) : (
         <div className={cn("absolute inset-0 bg-gradient-to-br", bgClass)} />
       )}
 
-      <div className="relative z-10 px-4 py-4">
-        <p className="max-w-[75%] text-[14px] font-extrabold leading-snug text-white drop-shadow-sm">
-          {title}
-        </p>
-        <p className="mt-0.5 max-w-[75%] text-[11px] font-medium text-white/90 drop-shadow-sm">
-          {subtitle}
-        </p>
-      </div>
+      {hasText ? (
+        <div className="relative z-10 px-4 py-4">
+          {title.trim() ? (
+            <p className="max-w-[75%] text-[14px] font-extrabold leading-snug text-white drop-shadow-sm">
+              {title}
+            </p>
+          ) : null}
+          {subtitle.trim() ? (
+            <p className="mt-0.5 max-w-[75%] text-[11px] font-medium text-white/90 drop-shadow-sm">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {badge}
     </div>
@@ -223,8 +233,9 @@ export function AdminBannersClient({
   };
 
   const handleSave = () => {
-    if (!draft.title.trim() || !draft.subtitle.trim()) {
-      toast.error("Sarlavha va qisqa matn to'ldirilishi shart");
+    const hasText = Boolean(draft.title.trim() || draft.subtitle.trim());
+    if (!hasText && !draft.imageUrl && !imageFile) {
+      toast.error("Matnsiz banner uchun rasm yuklang");
       return;
     }
 
@@ -319,7 +330,9 @@ export function AdminBannersClient({
 
             <div className="mt-4 space-y-3">
               <label className="block">
-                <span className="text-[12px] font-semibold text-[#64748B]">Sarlavha</span>
+                <span className="text-[12px] font-semibold text-[#64748B]">
+                  Sarlavha <span className="font-normal text-[#94A3B8]">(ixtiyoriy)</span>
+                </span>
                 <input
                   value={draft.title}
                   onChange={(e) => setDraft({ ...draft, title: e.target.value })}
@@ -329,7 +342,9 @@ export function AdminBannersClient({
               </label>
 
               <label className="block">
-                <span className="text-[12px] font-semibold text-[#64748B]">Qisqa matn</span>
+                <span className="text-[12px] font-semibold text-[#64748B]">
+                  Qisqa matn <span className="font-normal text-[#94A3B8]">(ixtiyoriy)</span>
+                </span>
                 <input
                   value={draft.subtitle}
                   onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
@@ -403,8 +418,8 @@ export function AdminBannersClient({
                 </span>
                 <div className="mt-2">
                   <BannerPreview
-                    title={draft.title || "Sarlavha"}
-                    subtitle={draft.subtitle || "Qisqa matn"}
+                    title={draft.title}
+                    subtitle={draft.subtitle}
                     bgClass={draft.bgClass}
                     imageUrl={previewUrl}
                     unoptimized={!!imagePreview}

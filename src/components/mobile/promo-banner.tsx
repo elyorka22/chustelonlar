@@ -11,6 +11,10 @@ interface PromoBannerProps {
   banners: PromoBannerData[];
 }
 
+function hasBannerText(slide: PromoBannerData): boolean {
+  return Boolean(slide.title.trim() || slide.subtitle.trim());
+}
+
 export function PromoBanner({ banners }: PromoBannerProps) {
   const slides = banners.length > 0 ? banners : [];
   const [active, setActive] = useState(0);
@@ -20,51 +24,71 @@ export function PromoBanner({ banners }: PromoBannerProps) {
   }
 
   const slide = slides[active] ?? slides[0];
+  const hasText = hasBannerText(slide);
+
+  const slideContent = (
+    <motion.div
+      key={slide.id}
+      initial={{ opacity: 0, x: 12 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -12 }}
+      transition={{ duration: 0.25 }}
+      className={cn(
+        "relative min-h-[136px] overflow-hidden rounded-[22px]",
+        hasText && "shadow-lg shadow-black/10"
+      )}
+    >
+      {slide.imageUrl ? (
+        <>
+          <Image
+            src={slide.imageUrl}
+            alt={slide.title || "Banner"}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 672px"
+            priority={active === 0}
+          />
+          {hasText ? (
+            <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20" />
+          ) : null}
+        </>
+      ) : (
+        <div className={cn("absolute inset-0 bg-gradient-to-br", slide.bgClass)} />
+      )}
+
+      {hasText ? (
+        <div className="relative z-10 px-5 py-5">
+          {slide.title.trim() ? (
+            <p className="max-w-[75%] text-[18px] font-extrabold leading-snug text-white drop-shadow-sm">
+              {slide.title}
+            </p>
+          ) : null}
+          {slide.subtitle.trim() ? (
+            <p className="mt-1 max-w-[75%] text-[13px] font-medium text-white/90 drop-shadow-sm">
+              {slide.subtitle}
+            </p>
+          ) : null}
+          <Link
+            href={slide.href}
+            className="mt-3 inline-flex rounded-full bg-white/20 px-3.5 py-1.5 text-[12px] font-bold text-white backdrop-blur-sm"
+          >
+            {slide.ctaLabel} →
+          </Link>
+        </div>
+      ) : null}
+    </motion.div>
+  );
 
   return (
     <div className="relative">
       <AnimatePresence mode="wait">
-        <motion.div
-          key={slide.id}
-          initial={{ opacity: 0, x: 12 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -12 }}
-          transition={{ duration: 0.25 }}
-          className="relative min-h-[136px] overflow-hidden rounded-[22px] shadow-lg shadow-black/10"
-        >
-          {slide.imageUrl ? (
-            <>
-              <Image
-                src={slide.imageUrl}
-                alt=""
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 672px"
-                priority={active === 0}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20" />
-            </>
-          ) : (
-            <div
-              className={cn("absolute inset-0 bg-gradient-to-br", slide.bgClass)}
-            />
-          )}
-
-          <div className="relative z-10 px-5 py-5">
-            <p className="max-w-[75%] text-[18px] font-extrabold leading-snug text-white drop-shadow-sm">
-              {slide.title}
-            </p>
-            <p className="mt-1 max-w-[75%] text-[13px] font-medium text-white/90 drop-shadow-sm">
-              {slide.subtitle}
-            </p>
-            <Link
-              href={slide.href}
-              className="mt-3 inline-flex rounded-full bg-white/20 px-3.5 py-1.5 text-[12px] font-bold text-white backdrop-blur-sm"
-            >
-              {slide.ctaLabel} →
-            </Link>
-          </div>
-        </motion.div>
+        {!hasText && slide.href ? (
+          <Link href={slide.href} className="block">
+            {slideContent}
+          </Link>
+        ) : (
+          slideContent
+        )}
       </AnimatePresence>
 
       {slides.length > 1 && (

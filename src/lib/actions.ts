@@ -694,11 +694,9 @@ export async function adminSavePromoBanner(formData: FormData) {
   const sortOrder = parseInt((formData.get("sortOrder") as string) || "0", 10);
   const isActive = formData.get("isActive") === "true";
 
-  if (!title || title.length < 2) {
-    return { error: "Sarlavha kamida 2 ta belgidan iborat bo'lishi kerak" };
-  }
-  if (!subtitle || subtitle.length < 2) {
-    return { error: "Qisqa matn kamida 2 ta belgidan iborat bo'lishi kerak" };
+  const hasText = Boolean(title || subtitle);
+  if (!hasText && !imageUrl) {
+    return { error: "Matnsiz banner uchun rasm yuklang" };
   }
 
   const {
