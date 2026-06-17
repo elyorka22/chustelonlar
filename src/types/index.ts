@@ -90,6 +90,18 @@ export interface CategoryData {
   freeLimit?: number;
 }
 
+export interface PromoBannerData {
+  id: string;
+  title: string;
+  subtitle: string;
+  href: string;
+  ctaLabel: string;
+  imageUrl: string | null;
+  bgClass: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
 export interface UserDashboardStats {
   wallet: {
     coinBalance: number;

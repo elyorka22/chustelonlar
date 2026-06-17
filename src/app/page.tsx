@@ -8,6 +8,7 @@ import {
   getCachedActiveCategories,
   getCachedLatestAds,
   getCachedHomeAdsGrid,
+  getCachedPromoBanners,
 } from "@/lib/cached-data";
 
 export const revalidate = 60;
@@ -16,12 +17,15 @@ export default async function HomePage() {
   let latestAds: Awaited<ReturnType<typeof getCachedLatestAds>> = [];
   let allAds: Awaited<ReturnType<typeof getCachedHomeAdsGrid>> = [];
   let categories: Awaited<ReturnType<typeof getCachedActiveCategories>> = [];
+  let promoBanners: Awaited<ReturnType<typeof getCachedPromoBanners>> = [];
 
-  const [latestResult, gridResult, categoriesResult] = await Promise.allSettled([
-    getCachedLatestAds(8),
-    getCachedHomeAdsGrid(),
-    getCachedActiveCategories(),
-  ]);
+  const [latestResult, gridResult, categoriesResult, bannersResult] =
+    await Promise.allSettled([
+      getCachedLatestAds(8),
+      getCachedHomeAdsGrid(),
+      getCachedActiveCategories(),
+      getCachedPromoBanners(),
+    ]);
 
   if (latestResult.status === "fulfilled") {
     latestAds = latestResult.value;
@@ -41,6 +45,12 @@ export default async function HomePage() {
     console.error("[homepage] categories failed:", categoriesResult.reason);
   }
 
+  if (bannersResult.status === "fulfilled") {
+    promoBanners = bannersResult.value;
+  } else {
+    console.error("[homepage] banners failed:", bannersResult.reason);
+  }
+
   return (
     <div className="min-h-screen bg-white pb-safe md:bg-secondary/30">
       {/* Search */}
@@ -50,7 +60,7 @@ export default async function HomePage() {
 
       {/* Banner */}
       <section className="px-4 pt-1 md:mx-auto md:max-w-2xl">
-        <PromoBanner />
+        <PromoBanner banners={promoBanners} />
       </section>
 
       {/* Categories — 3-column super-app grid */}

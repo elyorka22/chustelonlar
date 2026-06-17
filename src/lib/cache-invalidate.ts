@@ -4,6 +4,7 @@ import { memCacheDelPrefix } from "@/lib/memory-cache";
 export const CACHE_TAGS = {
   categories: "categories",
   ads: "ads",
+  banners: "banners",
 } as const;
 
 /** Bust list/detail/map caches after ad mutations */
@@ -22,10 +23,16 @@ export async function invalidatePublicCache(): Promise<void> {
   await Promise.all([invalidateAdsCache(), invalidateCategoriesCache()]);
 }
 
+export async function invalidatePromoBannersCache(): Promise<void> {
+  memCacheDelPrefix("banners:");
+  await cacheDelByPrefix("banners:");
+}
+
 export async function revalidatePublicPages(): Promise<void> {
   const { revalidatePath, revalidateTag } = await import("next/cache");
   revalidateTag(CACHE_TAGS.ads, "max");
   revalidateTag(CACHE_TAGS.categories, "max");
+  revalidateTag(CACHE_TAGS.banners, "max");
   revalidatePath("/");
   revalidatePath("/ads");
   revalidatePath("/map");

@@ -629,3 +629,136 @@ export async function adminDeleteCategory(slug: string) {
     return { error: "Kategoriya topilmadi" };
   }
 }
+
+function revalidateBannerPaths() {
+  revalidatePath("/");
+  revalidatePath("/admin/banners");
+}
+
+export async function adminUpdatePromoBannerImage(id: string, imageUrl: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { updatePromoBanner } = await import("@/lib/services/promo-banners");
+  const { invalidatePromoBannersCache } = await import("@/lib/cache-invalidate");
+  const { revalidateTag } = await import("next/cache");
+
+  try {
+    await updatePromoBanner(id, { imageUrl });
+    await invalidatePromoBannersCache();
+    revalidateTag("banners", "max");
+    revalidateBannerPaths();
+    return { success: true };
+  } catch {
+    return { error: "Banner topilmadi" };
+  }
+}
+
+export async function adminRemovePromoBannerImage(id: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { updatePromoBanner } = await import("@/lib/services/promo-banners");
+  const { invalidatePromoBannersCache } = await import("@/lib/cache-invalidate");
+  const { revalidateTag } = await import("next/cache");
+
+  try {
+    await updatePromoBanner(id, { imageUrl: null });
+    await invalidatePromoBannersCache();
+    revalidateTag("banners", "max");
+    revalidateBannerPaths();
+    return { success: true };
+  } catch {
+    return { error: "Banner topilmadi" };
+  }
+}
+
+export async function adminSavePromoBanner(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const id = (formData.get("id") as string | null)?.trim() || null;
+  const title = (formData.get("title") as string)?.trim();
+  const subtitle = (formData.get("subtitle") as string)?.trim();
+  const href = (formData.get("href") as string)?.trim() || "/ads";
+  const ctaLabel = (formData.get("ctaLabel") as string)?.trim() || "Ko'rish";
+  const bgClass =
+    (formData.get("bgClass") as string)?.trim() || "from-violet-500 to-purple-600";
+  const imageUrl = (formData.get("imageUrl") as string)?.trim() || null;
+  const sortOrder = parseInt((formData.get("sortOrder") as string) || "0", 10);
+  const isActive = formData.get("isActive") === "true";
+
+  if (!title || title.length < 2) {
+    return { error: "Sarlavha kamida 2 ta belgidan iborat bo'lishi kerak" };
+  }
+  if (!subtitle || subtitle.length < 2) {
+    return { error: "Qisqa matn kamida 2 ta belgidan iborat bo'lishi kerak" };
+  }
+
+  const {
+    createPromoBanner,
+    updatePromoBanner,
+  } = await import("@/lib/services/promo-banners");
+  const { invalidatePromoBannersCache } = await import("@/lib/cache-invalidate");
+  const { revalidateTag } = await import("next/cache");
+
+  try {
+    if (id) {
+      await updatePromoBanner(id, {
+        title,
+        subtitle,
+        href,
+        ctaLabel,
+        bgClass,
+        imageUrl,
+        sortOrder: Number.isNaN(sortOrder) ? 0 : sortOrder,
+        isActive,
+      });
+    } else {
+      await createPromoBanner({
+        title,
+        subtitle,
+        href,
+        ctaLabel,
+        bgClass,
+        imageUrl,
+        sortOrder: Number.isNaN(sortOrder) ? undefined : sortOrder,
+        isActive,
+      });
+    }
+
+    await invalidatePromoBannersCache();
+    revalidateTag("banners", "max");
+    revalidateBannerPaths();
+    return { success: true };
+  } catch {
+    return { error: "Banner saqlanmadi" };
+  }
+}
+
+export async function adminDeletePromoBanner(id: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { deletePromoBanner } = await import("@/lib/services/promo-banners");
+  const { invalidatePromoBannersCache } = await import("@/lib/cache-invalidate");
+  const { revalidateTag } = await import("next/cache");
+
+  try {
+    await deletePromoBanner(id);
+    await invalidatePromoBannersCache();
+    revalidateTag("banners", "max");
+    revalidateBannerPaths();
+    return { success: true };
+  } catch {
+    return { error: "Banner topilmadi" };
+  }
+}

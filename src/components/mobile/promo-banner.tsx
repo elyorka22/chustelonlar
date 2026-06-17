@@ -2,41 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import type { PromoBannerData } from "@/types";
 
-const SLIDES = [
-  {
-    id: 1,
-    bg: "from-violet-500 to-purple-600",
-    title: "Chustdagi eng yaxshi e'lonlar",
-    subtitle: "Avtomobil, uy-joy, ish va boshqa",
-    cta: "Ko'rish",
-    href: "/ads",
-    emoji: "🏠",
-  },
-  {
-    id: 2,
-    bg: "from-blue-500 to-indigo-600",
-    title: "E'lon joylash — bepul",
-    subtitle: "Bir necha daqiqada joylashtiring",
-    cta: "Boshlash",
-    href: "/create",
-    emoji: "📣",
-  },
-  {
-    id: 3,
-    bg: "from-emerald-500 to-teal-600",
-    title: "Xaritada qidiring",
-    subtitle: "Yaqin atrofdagi e'lonlar",
-    cta: "Xarita",
-    href: "/map",
-    emoji: "📍",
-  },
-];
+interface PromoBannerProps {
+  banners: PromoBannerData[];
+}
 
-export function PromoBanner() {
+export function PromoBanner({ banners }: PromoBannerProps) {
+  const slides = banners.length > 0 ? banners : [];
   const [active, setActive] = useState(0);
-  const slide = SLIDES[active];
+
+  if (slides.length === 0) {
+    return null;
+  }
+
+  const slide = slides[active] ?? slides[0];
 
   return (
     <div className="relative">
@@ -47,7 +30,10 @@ export function PromoBanner() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -12 }}
           transition={{ duration: 0.25 }}
-          className={`relative overflow-hidden rounded-[22px] bg-gradient-to-br ${slide.bg} px-5 py-5 shadow-lg shadow-black/10`}
+          className={cn(
+            "relative overflow-hidden rounded-[22px] bg-gradient-to-br px-5 py-5 shadow-lg shadow-black/10",
+            slide.bgClass
+          )}
         >
           <div className="relative z-10 max-w-[62%]">
             <p className="text-[18px] font-extrabold leading-snug text-white">
@@ -60,29 +46,39 @@ export function PromoBanner() {
               href={slide.href}
               className="mt-3 inline-flex rounded-full bg-white/20 px-3.5 py-1.5 text-[12px] font-bold text-white backdrop-blur-sm"
             >
-              {slide.cta} →
+              {slide.ctaLabel} →
             </Link>
           </div>
 
-          <div className="pointer-events-none absolute -bottom-2 -right-1 flex h-28 w-28 items-center justify-center text-[72px] drop-shadow-lg">
-            {slide.emoji}
-          </div>
+          {slide.imageUrl ? (
+            <div className="pointer-events-none absolute -bottom-1 right-0 h-28 w-28 overflow-hidden rounded-tl-2xl">
+              <Image
+                src={slide.imageUrl}
+                alt=""
+                fill
+                className="object-cover drop-shadow-lg"
+                sizes="112px"
+              />
+            </div>
+          ) : null}
         </motion.div>
       </AnimatePresence>
 
-      <div className="mt-3 flex gap-1.5">
-        {SLIDES.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setActive(i)}
-            className={`h-1.5 rounded-full transition-all ${
-              i === active ? "w-5 bg-gray-900" : "w-1.5 bg-gray-300"
-            }`}
-            aria-label={`Banner ${i + 1}`}
-          />
-        ))}
-      </div>
+      {slides.length > 1 && (
+        <div className="mt-3 flex gap-1.5">
+          {slides.map((s, i) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setActive(i)}
+              className={`h-1.5 rounded-full transition-all ${
+                i === active ? "w-5 bg-gray-900" : "w-1.5 bg-gray-300"
+              }`}
+              aria-label={`Banner ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
