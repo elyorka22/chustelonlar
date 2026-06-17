@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share, Plus, X, Smartphone, Zap, Bell } from "lucide-react";
@@ -28,7 +29,12 @@ export function PwaInstallSheet({
   onConfirmInstall,
   installing = false,
 }: PwaInstallSheetProps) {
+  const [mounted, setMounted] = useState(false);
   const isIos = variant === "ios";
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -39,7 +45,9 @@ export function PwaInstallSheet({
     };
   }, [open]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -48,29 +56,9 @@ export function PwaInstallSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22 }}
-            className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[400] bg-black/50 backdrop-blur-[2px]"
             onClick={onClose}
           />
-
-          {isIos && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom,0px)+76px)] z-[201] flex justify-center"
-            >
-              <div className="flex flex-col items-center gap-1">
-                <motion.div
-                  animate={{ y: [0, 6, 0] }}
-                  transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-                  className="rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-[#0F172A] shadow-lg"
-                >
-                  Ulashish tugmasi
-                </motion.div>
-                <div className="h-0 w-0 border-x-[8px] border-t-[10px] border-x-transparent border-t-white drop-shadow-md" />
-              </div>
-            </motion.div>
-          )}
 
           <motion.div
             initial={{ y: "100%" }}
@@ -78,17 +66,17 @@ export function PwaInstallSheet({
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 380 }}
             className={cn(
-              "fixed inset-x-0 bottom-0 z-[202] mx-auto max-w-lg",
-              "rounded-t-[28px] bg-[#F2F2F7] shadow-[0_-8px_40px_rgba(0,0,0,0.18)]",
-              "pb-[calc(env(safe-area-inset-bottom,0px)+12px)]"
+              "fixed inset-x-0 bottom-0 z-[401] mx-auto flex w-full max-w-lg flex-col",
+              "max-h-[min(92dvh,calc(100dvh-env(safe-area-inset-bottom,0px)))]",
+              "rounded-t-[28px] bg-[#F2F2F7] shadow-[0_-8px_40px_rgba(0,0,0,0.18)]"
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-center pt-2.5 pb-1">
+            <div className="flex shrink-0 justify-center pt-2.5 pb-1">
               <div className="h-1 w-9 rounded-full bg-[#C7C7CC]" />
             </div>
 
-            <div className="px-5 pt-2">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3.5">
                   <div className="relative h-[58px] w-[58px] shrink-0 overflow-hidden rounded-[14px] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.12)] ring-1 ring-black/5">
@@ -168,38 +156,39 @@ export function PwaInstallSheet({
                   })}
                 </ul>
               )}
+            </div>
 
-              <div className="mt-5 space-y-2">
-                {isIos ? (
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="h-[50px] w-full rounded-[14px] bg-primary text-[16px] font-semibold text-white active:opacity-90"
-                  >
-                    Tushundim
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={installing}
-                    onClick={onConfirmInstall}
-                    className="h-[50px] w-full rounded-[14px] bg-primary text-[16px] font-semibold text-white active:opacity-90 disabled:opacity-60"
-                  >
-                    {installing ? "O'rnatilmoqda..." : "O'rnatish"}
-                  </button>
-                )}
+            <div className="shrink-0 space-y-2 px-5 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+16px)]">
+              {isIos ? (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="h-[50px] w-full rounded-[14px] bg-white text-[16px] font-semibold text-[#007AFF]"
+                  className="h-[50px] w-full rounded-[14px] bg-primary text-[16px] font-semibold text-white active:opacity-90"
                 >
-                  Keyinroq
+                  Tushundim
                 </button>
-              </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={installing}
+                  onClick={onConfirmInstall}
+                  className="h-[50px] w-full rounded-[14px] bg-primary text-[16px] font-semibold text-white active:opacity-90 disabled:opacity-60"
+                >
+                  {installing ? "O'rnatilmoqda..." : "O'rnatish"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-[50px] w-full rounded-[14px] bg-white text-[16px] font-semibold text-[#007AFF]"
+              >
+                Keyinroq
+              </button>
             </div>
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

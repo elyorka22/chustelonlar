@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { X, SlidersHorizontal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,12 +41,26 @@ export function AdsFilterSheet({
 }: AdsFilterSheetProps) {
   const router = useRouter();
   const [draft, setDraft] = useState<AdsFilterValues>(initialFilters);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (open) {
       setDraft(initialFilters);
     }
   }, [open, initialFilters]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
   const handleApply = () => {
     const filters: AdsFilterValues = {
@@ -70,7 +85,9 @@ export function AdsFilterSheet({
   const inputClass =
     "h-12 w-full rounded-2xl bg-[#F4F6FA] px-4 text-[14px] font-medium outline-none ring-1 ring-[#E2E8F0] focus:ring-2 focus:ring-primary/20";
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -78,7 +95,7 @@ export function AdsFilterSheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[400] bg-black/40 backdrop-blur-sm"
             onClick={onClose}
           />
           <motion.div
@@ -86,7 +103,7 @@ export function AdsFilterSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
-            className="fixed inset-x-0 bottom-0 z-[81] max-h-[88vh] overflow-y-auto rounded-t-[28px] bg-white px-4 pb-8 pt-3 shadow-2xl"
+            className="fixed inset-x-0 bottom-0 z-[401] mx-auto max-h-[min(88dvh,calc(100dvh-env(safe-area-inset-bottom,0px)))] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-[28px] bg-white px-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] pt-3 shadow-2xl"
           >
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#E2E8F0]" />
             <div className="mb-5 flex items-center justify-between">
@@ -210,7 +227,8 @@ export function AdsFilterSheet({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 
