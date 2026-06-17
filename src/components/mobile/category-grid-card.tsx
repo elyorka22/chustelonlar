@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { CategoryEmoji } from "@/components/ui/category-emoji";
@@ -9,7 +10,8 @@ interface CategoryGridCardProps {
   label: string;
   subtitle: string;
   href: string;
-  emoji: string;
+  emoji?: string;
+  icon?: "grid";
   imageUrl?: string | null;
   variant?: "default" | "dark";
   className?: string;
@@ -20,6 +22,7 @@ export function CategoryGridCard({
   subtitle,
   href,
   emoji,
+  icon,
   imageUrl,
   variant = "default",
   className,
@@ -52,9 +55,17 @@ export function CategoryGridCard({
               alt=""
               className="h-full w-full object-cover object-center drop-shadow-md"
             />
-          ) : (
+          ) : icon === "grid" ? (
+            <LayoutGrid
+              className={cn(
+                "pb-1 pr-1 h-11 w-11",
+                isDark ? "text-white/85" : "text-gray-500"
+              )}
+              strokeWidth={1.6}
+            />
+          ) : emoji ? (
             <CategoryEmoji emoji={emoji} size={44} className="pb-1 pr-1" />
-          )}
+          ) : null}
         </div>
       </Link>
     </motion.div>

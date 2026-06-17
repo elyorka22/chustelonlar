@@ -21,17 +21,34 @@ enum AdStatus {
   DELETED
 }
 
+enum CategoryPricingType {
+  FREE
+  LIMITED_FREE
+  PAID
+}
+
+enum CoinTransactionType {
+  TOPUP
+  SPEND
+  REFUND
+  BONUS
+  AD_PROMOTION
+}
+
 model Category {
-  slug       String   @id
-  label      String
-  shortLabel String   @map("short_label")
-  emoji      String   @default("📦")
-  iconBg     String   @default("bg-blue-100") @map("icon_bg")
-  imageUrl   String?  @map("image_url")
-  sortOrder  Int      @default(0) @map("sort_order")
-  isActive   Boolean  @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  slug            String              @id
+  label           String
+  shortLabel      String              @map("short_label")
+  emoji           String              @default("📦")
+  iconBg          String              @default("bg-blue-100") @map("icon_bg")
+  imageUrl        String?             @map("image_url")
+  sortOrder       Int                 @default(0) @map("sort_order")
+  isActive        Boolean             @default(true) @map("is_active")
+  pricingType     CategoryPricingType @default(FREE) @map("pricing_type")
+  listingCoinCost Int                 @default(0) @map("listing_coin_cost")
+  freeLimit       Int                 @default(0) @map("free_limit")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
 
   ads Ad[]
 
@@ -39,22 +56,26 @@ model Category {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          UserRole  @default(USER)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  name                String?
+  email               String    @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  role                UserRole  @default(USER)
+  coinBalance         Int       @default(0) @map("coin_balance")
+  totalCoinsPurchased Int       @default(0) @map("total_coins_purchased")
+  totalCoinsSpent     Int       @default(0) @map("total_coins_spent")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt
 
-  accounts  Account[]
-  sessions  Session[]
-  ads       Ad[]
-  favorites Favorite[]
-  reports   Report[]
+  accounts          Account[]
+  sessions          Session[]
+  ads               Ad[]
+  favorites         Favorite[]
+  reports           Report[]
   pushSubscriptions PushSubscription[]
+  coinTransactions  CoinTransaction[]
 
   @@map("users")
 }
@@ -99,38 +120,88 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-model Ad {
-  id          String     @id @default(cuid())
-  title       String
-  description String     @db.Text
-  category    String
-  price       Float
-  priceCurrency   String  @default("UZS") @map("price_currency")
-  priceNegotiable Boolean @default(false) @map("price_negotiable")
-  latitude    Float
-  longitude   Float
-  district    String
-  phone       String
-  telegram    String?
-  status      AdStatus   @default(PENDING)
-  isPremium   Boolean    @default(false) @map("is_premium")
-  views          Int        @default(0)
-  deletedAt      DateTime?  @map("deleted_at")
-  imagesPurgedAt DateTime?  @map("images_purged_at")
-  createdById    String     @map("created_by")
-  createdAt      DateTime   @default(now()) @map("created_at")
-  updatedAt      DateTime   @updatedAt
+model MonetizationSettings {
+  id                   String   @id @default("default")
+  coinValueUzs         Int      @default(10000) @map("coin_value_uzs")
+  topPromotionCost     Int      @default(5) @map("top_promotion_cost")
+  vipPromotionCost     Int      @default(8) @map("vip_promotion_cost")
+  urgentPromotionCost  Int      @default(3) @map("urgent_promotion_cost")
+  autoCategoryCost     Int      @default(3) @map("auto_category_cost")
+  houseSaleCategoryCost Int     @default(5) @map("house_sale_category_cost")
+  rentCategoryCost     Int      @default(2) @map("rent_category_cost")
+  jobCategoryCost      Int      @default(2) @map("job_category_cost")
+  freeListingsLimit    Int      @default(2) @map("free_listings_limit")
+  topDurationDays      Int      @default(7) @map("top_duration_days")
+  vipDurationDays      Int      @default(7) @map("vip_duration_days")
+  urgentDurationDays   Int      @default(7) @map("urgent_duration_days")
+  contactTelegram      String?  @map("contact_telegram")
+  contactPhone         String?  @map("contact_phone")
+  contactWhatsapp      String?  @map("contact_whatsapp")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
-  createdBy User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  categoryRef Category @relation(fields: [category], references: [slug])
-  images    AdImage[]
-  favorites Favorite[]
-  reports   Report[]
+  @@map("monetization_settings")
+}
+
+model CoinTransaction {
+  id          String              @id @default(cuid())
+  userId      String              @map("user_id")
+  type        CoinTransactionType
+  amount      Int
+  description String?
+  adId        String?             @map("ad_id")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ad   Ad?  @relation(fields: [adId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("coin_transactions")
+}
+
+model Ad {
+  id              String     @id @default(cuid())
+  title           String
+  description     String     @db.Text
+  category        String
+  price           Float
+  priceCurrency   String     @default("UZS") @map("price_currency")
+  priceNegotiable Boolean    @default(false) @map("price_negotiable")
+  latitude        Float
+  longitude       Float
+  district        String
+  phone           String
+  telegram        String?
+  status          AdStatus   @default(PENDING)
+  isPremium       Boolean    @default(false) @map("is_premium")
+  isTop           Boolean    @default(false) @map("is_top")
+  topUntil        DateTime?  @map("top_until")
+  isVip           Boolean    @default(false) @map("is_vip")
+  vipUntil        DateTime?  @map("vip_until")
+  isUrgent        Boolean    @default(false) @map("is_urgent")
+  urgentUntil     DateTime?  @map("urgent_until")
+  views           Int        @default(0)
+  contactClicks   Int        @default(0) @map("contact_clicks")
+  listingCoinCost Int        @default(0) @map("listing_coin_cost")
+  deletedAt       DateTime?  @map("deleted_at")
+  imagesPurgedAt  DateTime?  @map("images_purged_at")
+  createdById     String     @map("created_by")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt
+
+  createdBy        User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  categoryRef      Category          @relation(fields: [category], references: [slug])
+  images           AdImage[]
+  favorites        Favorite[]
+  reports          Report[]
+  coinTransactions CoinTransaction[]
 
   @@index([status])
   @@index([category])
   @@index([createdAt])
   @@index([latitude, longitude])
+  @@index([isTop, topUntil])
+  @@index([isVip, vipUntil])
   @@map("ads")
 }
 

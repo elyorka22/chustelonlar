@@ -17,6 +17,9 @@ function toCategoryData(cat: {
   imageUrl: string | null;
   sortOrder: number;
   isActive: boolean;
+  pricingType?: string;
+  listingCoinCost?: number;
+  freeLimit?: number;
 }): CategoryData {
   return {
     slug: cat.slug,
@@ -27,6 +30,9 @@ function toCategoryData(cat: {
     imageUrl: cat.imageUrl,
     sortOrder: cat.sortOrder,
     isActive: cat.isActive,
+    pricingType: (cat.pricingType as CategoryData["pricingType"]) ?? "FREE",
+    listingCoinCost: cat.listingCoinCost ?? 0,
+    freeLimit: cat.freeLimit ?? 0,
   };
 }
 
@@ -139,6 +145,26 @@ export async function removeCategoryImage(slug: string) {
   const result = await getPrisma().category.update({
     where: { slug },
     data: { imageUrl: null },
+  });
+  await invalidateCategoryCache();
+  return toCategoryData(result);
+}
+
+export async function updateCategoryPricing(
+  slug: string,
+  data: {
+    pricingType: "FREE" | "LIMITED_FREE" | "PAID";
+    listingCoinCost: number;
+    freeLimit: number;
+  }
+) {
+  const result = await getPrisma().category.update({
+    where: { slug },
+    data: {
+      pricingType: data.pricingType,
+      listingCoinCost: data.listingCoinCost,
+      freeLimit: data.freeLimit,
+    },
   });
   await invalidateCategoryCache();
   return toCategoryData(result);

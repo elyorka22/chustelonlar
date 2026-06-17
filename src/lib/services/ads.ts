@@ -5,6 +5,9 @@ import { cacheGet, cacheSet } from "@/lib/redis";
 import type { AdFilterInput, CreateAdInput } from "@/lib/validations";
 import type { AdWithImages, PaginatedResult, MapAdMarker } from "@/types";
 import type { Prisma } from "@prisma/client";
+import { isPromotionActive } from "@/lib/promotions";
+
+export { isPromotionActive };
 
 function buildWhereClause(filters: AdFilterInput): Prisma.AdWhereInput {
   const where: Prisma.AdWhereInput = {
@@ -36,17 +39,33 @@ function buildWhereClause(filters: AdFilterInput): Prisma.AdWhereInput {
   return where;
 }
 
-function buildOrderBy(sort?: string): Prisma.AdOrderByWithRelationInput {
+function buildOrderBy(sort?: string): Prisma.AdOrderByWithRelationInput[] {
   switch (sort) {
     case "popular":
-      return { views: "desc" };
+      return [{ views: "desc" }];
     case "price_asc":
-      return { price: "asc" };
+      return [{ price: "asc" }];
     case "price_desc":
-      return { price: "desc" };
+      return [{ price: "desc" }];
     default:
-      return { createdAt: "desc" };
+      return [{ isTop: "desc" }, { isVip: "desc" }, { createdAt: "desc" }];
   }
+}
+
+export async function expireAdPromotions(): Promise<void> {
+  const now = new Date();
+  await getPrisma().ad.updateMany({
+    where: { isTop: true, topUntil: { lt: now } },
+    data: { isTop: false, topUntil: null },
+  });
+  await getPrisma().ad.updateMany({
+    where: { isVip: true, vipUntil: { lt: now } },
+    data: { isVip: false, vipUntil: null },
+  });
+  await getPrisma().ad.updateMany({
+    where: { isUrgent: true, urgentUntil: { lt: now } },
+    data: { isUrgent: false, urgentUntil: null },
+  });
 }
 
 const adInclude = {
@@ -65,6 +84,8 @@ export async function getAds(
 
   const cached = await cacheGet<PaginatedResult<AdWithImages>>(cacheKey);
   if (cached) return cached;
+
+  await expireAdPromotions();
 
   const where = buildWhereClause(filters);
   const orderBy = buildOrderBy(filters.sort);
@@ -151,10 +172,11 @@ export async function getMapAds(
 }
 
 export async function getLatestAds(limit = 8): Promise<AdWithImages[]> {
+  await expireAdPromotions();
   const ads = await getPrisma().ad.findMany({
     where: { status: "APPROVED" },
     include: adInclude,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ isTop: "desc" }, { isVip: "desc" }, { createdAt: "desc" }],
     take: limit,
   });
   return ads as AdWithImages[];
@@ -200,6 +222,27 @@ export async function createAd(
     throw new Error("Noto'g'ri kategoriya");
   }
 
+  const { calculateListingCost } = await import("@/lib/services/monetization");
+  const { spendUserCoins } = await import("@/lib/services/coins");
+
+  const costResult = await calculateListingCost(userId, data.category);
+
+  if (costResult.required > 0) {
+    try {
+      await spendUserCoins(
+        userId,
+        costResult.required,
+        "SPEND",
+        `E'lon joylash: ${data.category}`
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message === "INSUFFICIENT_COINS") {
+        throw new Error("INSUFFICIENT_COINS");
+      }
+      throw error;
+    }
+  }
+
   const ad = await getPrisma().ad.create({
     data: {
       title: sanitizeText(data.title),
@@ -215,6 +258,7 @@ export async function createAd(
       telegram: data.telegram ? sanitizeTelegram(data.telegram) : null,
       status: "PENDING",
       createdById: userId,
+      listingCoinCost: costResult.required,
       images: {
         create: data.imageIds.map((imageId, index) => ({
           fullUrl: imageId,
@@ -227,6 +271,72 @@ export async function createAd(
   });
 
   return ad;
+}
+
+export async function purchaseAdPromotion(
+  userId: string,
+  adId: string,
+  type: "TOP" | "VIP" | "URGENT"
+) {
+  const ad = await getPrisma().ad.findFirst({
+    where: { id: adId, createdById: userId, status: { not: "DELETED" } },
+  });
+  if (!ad) throw new Error("E'lon topilmadi");
+
+  const {
+    getMonetizationSettings,
+    getPromotionCost,
+    getPromotionDurationDays,
+  } = await import("@/lib/services/monetization");
+  const { spendUserCoins } = await import("@/lib/services/coins");
+
+  const settings = await getMonetizationSettings();
+  const cost = getPromotionCost(type, settings);
+  const days = getPromotionDurationDays(type, settings);
+  const until = new Date();
+  until.setDate(until.getDate() + days);
+
+  const promoData: Record<string, unknown> = {};
+  const labels = { TOP: "TOP", VIP: "VIP", URGENT: "Shoshilinch" };
+
+  if (type === "TOP") {
+    promoData.isTop = true;
+    promoData.topUntil = until;
+  } else if (type === "VIP") {
+    promoData.isVip = true;
+    promoData.vipUntil = until;
+  } else {
+    promoData.isUrgent = true;
+    promoData.urgentUntil = until;
+  }
+
+  try {
+    await spendUserCoins(
+      userId,
+      cost,
+      "AD_PROMOTION",
+      `${labels[type]} reklama: ${ad.title}`,
+      adId
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_COINS") {
+      throw new Error("INSUFFICIENT_COINS");
+    }
+    throw error;
+  }
+
+  return getPrisma().ad.update({
+    where: { id: adId },
+    data: promoData,
+    include: adInclude,
+  });
+}
+
+export async function incrementContactClicks(adId: string): Promise<void> {
+  await getPrisma().ad.update({
+    where: { id: adId },
+    data: { contactClicks: { increment: 1 } },
+  });
 }
 
 export async function getUserAds(userId: string) {
@@ -322,7 +432,10 @@ export async function toggleFavorite(userId: string, adId: string) {
 
 export async function getUserFavorites(userId: string) {
   const favorites = await getPrisma().favorite.findMany({
-    where: { userId },
+    where: {
+      userId,
+      ad: { status: "APPROVED" },
+    },
     include: {
       ad: { include: adInclude },
     },
@@ -330,6 +443,18 @@ export async function getUserFavorites(userId: string) {
   });
 
   return favorites.map((f) => f.ad) as AdWithImages[];
+}
+
+export async function getUserFavoriteIds(userId: string): Promise<string[]> {
+  const favorites = await getPrisma().favorite.findMany({
+    where: {
+      userId,
+      ad: { status: "APPROVED" },
+    },
+    select: { adId: true },
+  });
+
+  return favorites.map((f) => f.adId);
 }
 
 export async function isFavorited(userId: string, adId: string) {

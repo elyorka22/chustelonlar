@@ -51,19 +51,31 @@ export function AdsListingClient({ result, params, categories }: AdsListingClien
             { label: "Mashhur", value: "popular" },
             { label: "Arzon", value: "price_asc" },
             { label: "Qimmat", value: "price_desc" },
-          ].map((s) => (
-            <button
-              key={s.value}
-              onClick={() => router.push(`/ads?sort=${s.value}`)}
-              className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${
-                params.sort === s.value
-                  ? "bg-primary text-white"
-                  : "bg-white text-gray-600"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
+          ].map((s) => {
+            const nextParams = new URLSearchParams();
+            for (const [key, value] of Object.entries(params)) {
+              if (value && key !== "page" && key !== "sort") {
+                nextParams.set(key, value);
+              }
+            }
+            if (s.value !== "newest") {
+              nextParams.set("sort", s.value);
+            }
+
+            return (
+              <button
+                key={s.value}
+                onClick={() => router.push(`/ads?${nextParams.toString()}`)}
+                className={`rounded-full px-3 py-1.5 text-[12px] font-semibold ${
+                  (params.sort || "newest") === s.value
+                    ? "bg-primary text-white"
+                    : "bg-white text-gray-600"
+                }`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
         </div>
       )}
 

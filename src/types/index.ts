@@ -29,7 +29,15 @@ export interface AdWithImages {
   telegram: string | null;
   status: string;
   isPremium: boolean;
+  isTop?: boolean;
+  topUntil?: Date | null;
+  isVip?: boolean;
+  vipUntil?: Date | null;
+  isUrgent?: boolean;
+  urgentUntil?: Date | null;
   views: number;
+  contactClicks?: number;
+  listingCoinCost?: number;
   createdAt: Date;
   createdBy: {
     id: string;
@@ -76,6 +84,41 @@ export interface CategoryData {
   imageUrl: string | null;
   sortOrder: number;
   isActive: boolean;
+  pricingType?: "FREE" | "LIMITED_FREE" | "PAID";
+  listingCoinCost?: number;
+  freeLimit?: number;
+}
+
+export interface UserDashboardStats {
+  wallet: {
+    coinBalance: number;
+    totalCoinsPurchased: number;
+    totalCoinsSpent: number;
+  };
+  transactions: {
+    id: string;
+    type: string;
+    amount: number;
+    description: string | null;
+    createdAt: Date;
+  }[];
+  listings: {
+    total: number;
+    active: number;
+    sold: number;
+    expired: number;
+  };
+  engagement: {
+    totalViews: number;
+    favoritesCount: number;
+    contactClicks: number;
+    avgViewsPerListing: number;
+  };
+  coins: {
+    spentOnPromotions: number;
+    spentOnPublishing: number;
+  };
+  topListing: { id: string; title: string; views: number } | null;
 }
 
 export interface AnalyticsData {

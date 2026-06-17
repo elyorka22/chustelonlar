@@ -7,7 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MobileHeader } from "@/components/mobile/mobile-header";
 import { UploadBox } from "@/components/mobile/upload-box";
 import { MAP_CENTER } from "@/lib/constants";
-import { submitAd } from "@/lib/actions";
+import { submitAd, getListingCostPreview } from "@/lib/actions";
+import { InsufficientCoinsModal } from "@/components/mobile/insufficient-coins-modal";
+import { MonetkaIcon } from "@/components/ui/monetka-icon";
 import {
   getCategoryFormConfig,
   buildDescriptionWithExtras,
@@ -36,7 +38,13 @@ interface UploadedImage {
   thumbUrl: string;
 }
 
-export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
+export function CreateAdMobile({
+  categories,
+  initialBalance = 0,
+}: {
+  categories: CategoryData[];
+  initialBalance?: number;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -45,6 +53,17 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [location, setLocation] = useState({ lat: MAP_CENTER.lat, lng: MAP_CENTER.lng });
   const [categoryExtras, setCategoryExtras] = useState<Record<string, string>>({});
+  const [listingCost, setListingCost] = useState<{
+    required: number;
+    freeRemaining: number;
+    reason: string;
+    balance: number;
+  } | null>(null);
+  const [insufficientModal, setInsufficientModal] = useState<{
+    balance: number;
+    required: number;
+    contact: { telegram: string | null; phone: string | null; whatsapp: string | null };
+  } | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -63,9 +82,18 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
 
   const selectedCategory = findCategory(categories, form.category);
 
-  const handleCategoryChange = (slug: string) => {
+  const handleCategoryChange = async (slug: string) => {
     setForm((prev) => ({ ...prev, category: slug }));
     setCategoryExtras({});
+    const preview = await getListingCostPreview(slug);
+    if ("success" in preview && preview.success) {
+      setListingCost({
+        required: preview.required,
+        freeRemaining: preview.freeRemaining,
+        reason: preview.reason,
+        balance: preview.balance,
+      });
+    }
   };
 
   const handleExtraChange = (key: string, value: string) => {
@@ -171,6 +199,14 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
     });
     setLoading(false);
     if (result.error) {
+      if (result.code === "INSUFFICIENT_COINS") {
+        setInsufficientModal({
+          balance: result.balance ?? initialBalance,
+          required: result.required ?? listingCost?.required ?? 0,
+          contact: result.contact ?? { telegram: null, phone: null, whatsapp: null },
+        });
+        return;
+      }
       toast.error(result.error);
       return;
     }
@@ -247,6 +283,24 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
                     );
                   })}
                 </div>
+                {listingCost && form.category && (
+                  <div className="mt-3 flex items-center gap-2 rounded-2xl bg-amber-50 px-3 py-2.5 ring-1 ring-amber-200/80">
+                    <MonetkaIcon size={22} showShine={false} />
+                    <div className="text-[12px]">
+                      {listingCost.required > 0 ? (
+                        <p className="font-bold text-amber-900">
+                          Joylash: {listingCost.required} Monetka · Balans: {listingCost.balance}
+                        </p>
+                      ) : listingCost.reason === "LIMITED_FREE" ? (
+                        <p className="font-bold text-emerald-800">
+                          Bepul ({listingCost.freeRemaining} ta qoldi)
+                        </p>
+                      ) : (
+                        <p className="font-bold text-emerald-800">Bepul kategoriya</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {hasValidCategory && categoryConfig && selectedCategory && (
@@ -466,6 +520,20 @@ export function CreateAdMobile({ categories }: { categories: CategoryData[] }) {
           )}
         </div>
       </div>
+
+      <InsufficientCoinsModal
+        open={!!insufficientModal}
+        onClose={() => setInsufficientModal(null)}
+        balance={insufficientModal?.balance ?? 0}
+        required={insufficientModal?.required ?? 0}
+        contact={
+          insufficientModal?.contact ?? {
+            telegram: null,
+            phone: null,
+            whatsapp: null,
+          }
+        }
+      />
     </div>
   );
 }

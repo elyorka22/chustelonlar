@@ -60,6 +60,24 @@ export async function submitAd(input: CreateAdInput) {
     return { success: true, adId: ad.id };
   } catch (error) {
     console.error("Submit ad error:", error);
+    if (error instanceof Error && error.message === "INSUFFICIENT_COINS") {
+      const { calculateListingCost, getContactLinks } = await import(
+        "@/lib/services/monetization"
+      );
+      const { getUserCoinWallet } = await import("@/lib/services/coins");
+      const [cost, wallet, contact] = await Promise.all([
+        calculateListingCost(session.user.id, input.category),
+        getUserCoinWallet(session.user.id),
+        getContactLinks(),
+      ]);
+      return {
+        error: "Hisobingizda monetka yetarli emas",
+        code: "INSUFFICIENT_COINS" as const,
+        balance: wallet.coinBalance,
+        required: cost.required,
+        contact,
+      };
+    }
     if (error instanceof Error && error.message === "Noto'g'ri kategoriya") {
       return { error: "Kategoriyani tanlang" };
     }
@@ -67,6 +85,145 @@ export async function submitAd(input: CreateAdInput) {
       return { error: error.issues[0]?.message ?? "Ma'lumotlar noto'g'ri" };
     }
     return { error: "E'lon yaratishda xatolik yuz berdi" };
+  }
+}
+
+export async function getListingCostPreview(categorySlug: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  const { calculateListingCost } = await import("@/lib/services/monetization");
+  const { getUserCoinWallet } = await import("@/lib/services/coins");
+
+  const [cost, wallet] = await Promise.all([
+    calculateListingCost(session.user.id, categorySlug),
+    getUserCoinWallet(session.user.id),
+  ]);
+
+  return {
+    success: true,
+    ...cost,
+    balance: wallet.coinBalance,
+  };
+}
+
+export async function purchasePromotion(
+  adId: string,
+  type: "TOP" | "VIP" | "URGENT"
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  try {
+    const { purchaseAdPromotion } = await import("@/lib/services/ads");
+    await purchaseAdPromotion(session.user.id, adId, type);
+    revalidatePath("/dashboard");
+    revalidatePath("/ads");
+    revalidatePath(`/ads/${adId}`);
+    return { success: true };
+  } catch (error) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_COINS") {
+      return { error: "Monetka yetarli emas", code: "INSUFFICIENT_COINS" as const };
+    }
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+    return { error: "Xatolik yuz berdi" };
+  }
+}
+
+export async function trackContactClick(adId: string) {
+  const { incrementContactClicks } = await import("@/lib/services/ads");
+  await incrementContactClicks(adId);
+  return { success: true };
+}
+
+export async function adminUpdateMonetizationSettings(data: {
+  coinValueUzs: number;
+  topPromotionCost: number;
+  vipPromotionCost: number;
+  urgentPromotionCost: number;
+  autoCategoryCost: number;
+  houseSaleCategoryCost: number;
+  rentCategoryCost: number;
+  jobCategoryCost: number;
+  freeListingsLimit: number;
+  topDurationDays: number;
+  vipDurationDays: number;
+  urgentDurationDays: number;
+  contactTelegram?: string;
+  contactPhone?: string;
+  contactWhatsapp?: string;
+}) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { updateMonetizationSettings } = await import("@/lib/services/monetization");
+  await updateMonetizationSettings(data);
+  revalidatePath("/admin/monetization");
+  return { success: true };
+}
+
+export async function adminAdjustCoins(
+  userId: string,
+  amount: number,
+  type: "TOPUP" | "BONUS" | "SPEND" | "REFUND",
+  description?: string
+) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { adminAdjustUserCoins } = await import("@/lib/services/coins");
+  try {
+    const result = await adminAdjustUserCoins(userId, amount, type, description);
+    revalidatePath("/admin/monetization");
+    return { success: true, coinBalance: result.coinBalance };
+  } catch (error) {
+    if (error instanceof Error) return { error: error.message };
+    return { error: "Xatolik yuz berdi" };
+  }
+}
+
+export async function adminSearchUsers(query: string) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { searchUsersForAdmin } = await import("@/lib/services/coins");
+  const users = await searchUsersForAdmin(query);
+  return { success: true, users };
+}
+
+export async function adminUpdateCategoryPricing(
+  slug: string,
+  data: {
+    pricingType: "FREE" | "LIMITED_FREE" | "PAID";
+    listingCoinCost: number;
+    freeLimit: number;
+  }
+) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return { error: "Ruxsat yo'q" };
+  }
+
+  const { updateCategoryPricing } = await import("@/lib/services/categories");
+  try {
+    await updateCategoryPricing(slug, data);
+    revalidatePath("/admin/monetization");
+    revalidatePath("/admin/categories");
+    return { success: true };
+  } catch {
+    return { error: "Kategoriya topilmadi" };
   }
 }
 
@@ -103,6 +260,7 @@ export async function toggleAdFavorite(adId: string) {
   if (!session?.user?.id) return { error: "Avtorizatsiya talab qilinadi" };
 
   const result = await toggleFavorite(session.user.id, adId);
+  revalidatePath("/dashboard");
   return { success: true, ...result };
 }
 

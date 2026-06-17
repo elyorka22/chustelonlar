@@ -86,7 +86,7 @@ export function PwaInstallButton() {
     return (
       <Link
         href="/create"
-        className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-2xl bg-gray-900 px-4 text-[14px] font-bold text-white active:scale-95 transition-transform"
+        className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-2xl bg-primary px-4 text-[14px] font-bold text-white shadow-md shadow-primary/25 active:scale-95 transition-transform"
       >
         <Plus className="h-4 w-4" strokeWidth={2.5} />
         E&apos;lon
@@ -99,7 +99,7 @@ export function PwaInstallButton() {
       <button
         type="button"
         onClick={handleInstall}
-        className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-2xl bg-gray-900 px-4 text-[14px] font-bold text-white active:scale-95 transition-transform"
+        className="flex h-[52px] shrink-0 items-center gap-1.5 rounded-2xl bg-primary px-4 text-[14px] font-bold text-white shadow-md shadow-primary/25 active:scale-95 transition-transform"
       >
         <Download className="h-4 w-4" strokeWidth={2.5} />
         O&apos;rnatish

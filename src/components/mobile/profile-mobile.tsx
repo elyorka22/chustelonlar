@@ -13,6 +13,10 @@ import {
   Clock,
   ChevronRight,
   Bookmark,
+  Heart,
+  BarChart3,
+  MousePointerClick,
+  TrendingUp,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatPrice, formatRelativeDate } from "@/lib/utils";
@@ -20,8 +24,13 @@ import { AD_STATUS_LABELS, AD_STATUS_STYLES } from "@/lib/constants";
 import { markAdSold, removeAd } from "@/lib/actions";
 import { toast } from "sonner";
 import { ProfileSettings } from "@/components/mobile/profile-settings";
+import { MonetkaWalletCard, CoinHistoryTable } from "@/components/mobile/monetka-wallet";
+import { MonetkaBadge } from "@/components/ui/monetka-icon";
+import { PromotionPanel } from "@/components/mobile/promotion-panel";
+import { isPromotionActive } from "@/lib/promotions";
 import { cn } from "@/lib/utils";
-import type { AdWithImages } from "@/types";
+import type { AdWithImages, CategoryData, UserDashboardStats } from "@/types";
+import { AdCardGrid } from "@/components/mobile/ad-card-grid";
 
 interface ProfileMobileProps {
   user: {
@@ -31,19 +40,19 @@ interface ProfileMobileProps {
     createdAt: Date;
     role: string;
     hasPassword: boolean;
+    coinBalance: number;
   };
   ads: AdWithImages[];
-  stats: {
-    total: number;
-    approved: number;
-    pending: number;
-    sold: number;
-    totalViews: number;
-  };
+  favorites: AdWithImages[];
+  categories: CategoryData[];
+  dashboardStats: UserDashboardStats;
+  promotionCosts: { top: number; vip: number; urgent: number };
+  coinValueUzs: number;
 }
 
 const TABS = [
   { id: "ads", label: "E'lonlar", icon: FileText },
+  { id: "wallet", label: "Monetka", icon: BarChart3 },
   { id: "saved", label: "Saqlangan", icon: Bookmark },
   { id: "settings", label: "Sozlamalar", icon: Settings },
 ] as const;
@@ -57,9 +66,25 @@ function formatMemberSince(date: Date) {
   }).format(new Date(date));
 }
 
-export function ProfileMobile({ user, ads, stats }: ProfileMobileProps) {
+export function ProfileMobile({
+  user,
+  ads,
+  favorites,
+  categories,
+  dashboardStats,
+  promotionCosts,
+  coinValueUzs,
+}: ProfileMobileProps) {
+  const stats = {
+    total: dashboardStats.listings.total,
+    approved: dashboardStats.listings.active,
+    pending: ads.filter((a) => a.status === "PENDING").length,
+    sold: dashboardStats.listings.sold,
+    totalViews: dashboardStats.engagement.totalViews,
+  };
   const [activeTab, setActiveTab] = useState<TabId>("ads");
   const [displayName, setDisplayName] = useState(user.name || "");
+  const [savedAds, setSavedAds] = useState(favorites);
 
   const handleMarkSold = async (adId: string) => {
     const result = await markAdSold(adId);
@@ -118,6 +143,7 @@ export function ProfileMobile({ user, ads, stats }: ProfileMobileProps) {
                     Admin
                   </span>
                 )}
+                <MonetkaBadge balance={user.coinBalance} />
               </div>
               <p className="mt-0.5 truncate text-[13px] text-[#64748B]">{user.email}</p>
               <p className="mt-1 text-[11px] font-medium text-[#94A3B8]">
@@ -218,6 +244,25 @@ export function ProfileMobile({ user, ads, stats }: ProfileMobileProps) {
               Yangi e&apos;lon joylash
             </Link>
 
+            {savedAds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("saved")}
+                className="flex h-[48px] w-full items-center justify-between rounded-[16px] bg-white px-4 ring-1 ring-[#E2E8F0] active:scale-[0.99] transition-transform"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50">
+                    <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-[14px] font-bold text-[#0F172A]">Saqlanganlar</p>
+                    <p className="text-[11px] text-[#64748B]">{savedAds.length} ta e&apos;lon</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-[#94A3B8]" />
+              </button>
+            )}
+
             {ads.length === 0 ? (
               <div className="rounded-[20px] bg-white px-6 py-14 text-center ring-1 ring-[#E2E8F0]">
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F8FAFC]">
@@ -283,13 +328,15 @@ export function ProfileMobile({ user, ads, stats }: ProfileMobileProps) {
 
                   <div className="flex gap-2 border-t border-[#F1F5F9] px-3.5 py-2.5">
                     {ad.status === "APPROVED" && (
-                      <button
-                        type="button"
-                        onClick={() => handleMarkSold(ad.id)}
-                        className="flex-1 rounded-xl bg-[#F8FAFC] py-2.5 text-[12px] font-bold text-[#475569] ring-1 ring-[#E2E8F0]"
-                      >
-                        Sotildi deb belgilash
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleMarkSold(ad.id)}
+                          className="flex-1 rounded-xl bg-[#F8FAFC] py-2.5 text-[12px] font-bold text-[#475569] ring-1 ring-[#E2E8F0]"
+                        >
+                          Sotildi deb belgilash
+                        </button>
+                      </>
                     )}
                     <button
                       type="button"
@@ -302,21 +349,140 @@ export function ProfileMobile({ user, ads, stats }: ProfileMobileProps) {
                       O&apos;chirish
                     </button>
                   </div>
+                  {ad.status === "APPROVED" && (
+                    <div className="border-t border-[#F1F5F9] px-3.5 pb-3.5 pt-2">
+                      <PromotionPanel
+                        adId={ad.id}
+                        costs={promotionCosts}
+                        active={{
+                          isTop: isPromotionActive(!!ad.isTop, ad.topUntil),
+                          isVip: isPromotionActive(!!ad.isVip, ad.vipUntil),
+                          isUrgent: isPromotionActive(!!ad.isUrgent, ad.urgentUntil),
+                        }}
+                      />
+                    </div>
+                  )}
                 </motion.article>
               ))
             )}
           </div>
         )}
 
-        {activeTab === "saved" && (
-          <div className="rounded-[20px] bg-white px-6 py-14 text-center ring-1 ring-[#E2E8F0]">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F8FAFC]">
-              <Bookmark className="h-7 w-7 text-[#CBD5E1]" />
+        {activeTab === "wallet" && (
+          <div className="space-y-4">
+            <MonetkaWalletCard
+              balance={dashboardStats.wallet.coinBalance}
+              totalPurchased={dashboardStats.wallet.totalCoinsPurchased}
+              totalSpent={dashboardStats.wallet.totalCoinsSpent}
+              coinValueUzs={coinValueUzs}
+            />
+
+            <div className="rounded-[20px] bg-white p-4 ring-1 ring-[#E2E8F0]">
+              <h2 className="text-[15px] font-extrabold text-[#0F172A]">E&apos;lon statistikasi</h2>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {[
+                  { label: "Jami", value: dashboardStats.listings.total },
+                  { label: "Faol", value: dashboardStats.listings.active },
+                  { label: "Sotilgan", value: dashboardStats.listings.sold },
+                  { label: "Muddati tugagan", value: dashboardStats.listings.expired },
+                  { label: "Ko'rishlar", value: dashboardStats.engagement.totalViews, icon: Eye },
+                  { label: "Saqlangan", value: dashboardStats.engagement.favoritesCount, icon: Heart },
+                  { label: "Kontakt bosish", value: dashboardStats.engagement.contactClicks, icon: MousePointerClick },
+                  { label: "O'rtacha ko'rish", value: dashboardStats.engagement.avgViewsPerListing, icon: TrendingUp },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="rounded-xl bg-[#F8FAFC] px-3 py-2.5 ring-1 ring-[#E2E8F0]">
+                      <div className="flex items-center gap-1">
+                        {Icon && <Icon className="h-3 w-3 text-primary" />}
+                        <p className="text-[10px] font-bold uppercase text-[#94A3B8]">{item.label}</p>
+                      </div>
+                      <p className="mt-1 text-[18px] font-extrabold text-[#0F172A]">{item.value}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <p className="text-[15px] font-bold text-[#0F172A]">Saqlanganlar yo&apos;q</p>
-            <p className="mt-1 text-[13px] text-[#64748B]">
-              Yoqtirgan e&apos;lonlaringiz shu yerda ko&apos;rinadi
-            </p>
+
+            <div className="rounded-[20px] bg-white p-4 ring-1 ring-[#E2E8F0]">
+              <h2 className="text-[15px] font-extrabold text-[#0F172A]">Monetka tahlili</h2>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-rose-50 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase text-rose-600">Reklamaga</p>
+                  <p className="text-[18px] font-extrabold text-rose-900">
+                    -{dashboardStats.coins.spentOnPromotions}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-amber-50 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase text-amber-700">Joylashga</p>
+                  <p className="text-[18px] font-extrabold text-amber-900">
+                    -{dashboardStats.coins.spentOnPublishing}
+                  </p>
+                </div>
+              </div>
+              {dashboardStats.topListing && (
+                <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-3 ring-1 ring-emerald-100">
+                  <p className="text-[10px] font-bold uppercase text-emerald-700">Eng muvaffaqiyatli</p>
+                  <p className="mt-1 text-[14px] font-bold text-[#0F172A]">
+                    {dashboardStats.topListing.title}
+                  </p>
+                  <p className="text-[12px] text-emerald-700">
+                    {dashboardStats.topListing.views} ko&apos;rish
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h2 className="mb-2 px-1 text-[15px] font-extrabold text-[#0F172A]">Tranzaksiyalar</h2>
+              <CoinHistoryTable transactions={dashboardStats.transactions} />
+            </div>
+          </div>
+        )}
+
+        {activeTab === "saved" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <h2 className="text-[16px] font-bold text-[#0F172A]">Saqlangan e&apos;lonlar</h2>
+                <p className="text-[12px] text-[#64748B]">{savedAds.length} ta e&apos;lon</p>
+              </div>
+            </div>
+
+            {savedAds.length === 0 ? (
+              <div className="rounded-[20px] bg-white px-6 py-14 text-center ring-1 ring-[#E2E8F0]">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F8FAFC]">
+                  <Bookmark className="h-7 w-7 text-[#CBD5E1]" />
+                </div>
+                <p className="text-[15px] font-bold text-[#0F172A]">Saqlanganlar yo&apos;q</p>
+                <p className="mt-1 text-[13px] text-[#64748B]">
+                  Yoqtirgan e&apos;lonlaringiz shu yerda ko&apos;rinadi
+                </p>
+                <Link
+                  href="/ads"
+                  className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-[13px] font-bold text-white"
+                >
+                  E&apos;lonlarni ko&apos;rish
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                {savedAds.map((ad, i) => (
+                  <AdCardGrid
+                    key={ad.id}
+                    ad={ad}
+                    categories={categories}
+                    index={i}
+                    favorited
+                    onFavoriteChange={(adId, next) => {
+                      if (!next) {
+                        setSavedAds((current) => current.filter((item) => item.id !== adId));
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 

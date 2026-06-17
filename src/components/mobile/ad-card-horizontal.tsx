@@ -7,6 +7,8 @@ import { formatPrice } from "@/lib/utils";
 import type { AdWithImages, CategoryData } from "@/types";
 import { findCategory } from "@/lib/category-helpers";
 import { CategoryEmoji } from "@/components/ui/category-emoji";
+import { AdPromotionBadges, getVipCardClass } from "@/components/ui/ad-promotion-badges";
+import { cn } from "@/lib/utils";
 
 interface AdCardHorizontalProps {
   ad: AdWithImages;
@@ -31,7 +33,7 @@ export function AdCardHorizontal({
       className="w-[210px] shrink-0 snap-start"
     >
       <Link href={`/ads/${ad.id}`} className="block">
-        <div className="flex gap-2.5 overflow-hidden rounded-2xl bg-white p-2 card-shadow">
+        <div className={cn("flex gap-2.5 overflow-hidden rounded-2xl bg-white p-2 card-shadow", getVipCardClass(ad.isVip, ad.vipUntil))}>
           <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-xl bg-secondary">
             {thumbUrl ? (
               <Image
@@ -46,6 +48,11 @@ export function AdCardHorizontal({
                 {category?.emoji && <CategoryEmoji emoji={category.emoji} size={28} />}
               </div>
             )}
+            <AdPromotionBadges
+              isUrgent={ad.isUrgent}
+              urgentUntil={ad.urgentUntil}
+              className="absolute left-1 top-1 scale-90"
+            />
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col justify-center">

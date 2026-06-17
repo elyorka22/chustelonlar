@@ -2,20 +2,30 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { motion } from "framer-motion";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, cn } from "@/lib/utils";
 import type { AdWithImages, CategoryData } from "@/types";
 import { findCategory } from "@/lib/category-helpers";
 import { CategoryEmoji } from "@/components/ui/category-emoji";
+import { FavoriteButton } from "@/components/mobile/favorite-button";
+import { AdPromotionBadges, getVipCardClass } from "@/components/ui/ad-promotion-badges";
 
 interface AdCardGridProps {
   ad: AdWithImages;
   categories?: CategoryData[];
   index?: number;
+  favorited?: boolean;
+  onFavoriteChange?: (adId: string, favorited: boolean) => void;
 }
 
-export function AdCardGrid({ ad, categories = [], index = 0 }: AdCardGridProps) {
+export function AdCardGrid({
+  ad,
+  categories = [],
+  index = 0,
+  favorited = false,
+  onFavoriteChange,
+}: AdCardGridProps) {
   const thumbUrl = ad.images[0]?.thumbUrl;
   const category = findCategory(categories, ad.category);
 
@@ -27,7 +37,7 @@ export function AdCardGrid({ ad, categories = [], index = 0 }: AdCardGridProps) 
       whileTap={{ scale: 0.98 }}
     >
       <Link href={`/ads/${ad.id}`} className="block">
-        <div className="overflow-hidden rounded-[20px] bg-white card-shadow">
+        <div className={cn("overflow-hidden rounded-[20px] bg-white card-shadow", getVipCardClass(ad.isVip, ad.vipUntil))}>
           <div className="relative aspect-[4/3] bg-secondary">
             {thumbUrl ? (
               <Image
@@ -42,13 +52,21 @@ export function AdCardGrid({ ad, categories = [], index = 0 }: AdCardGridProps) 
                 {category?.emoji && <CategoryEmoji emoji={category.emoji} size={40} />}
               </div>
             )}
-            <button
-              className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm"
-              onClick={(e) => e.preventDefault()}
-              aria-label="Favorite"
-            >
-              <Heart className="h-4 w-4 text-gray-400" />
-            </button>
+            <FavoriteButton
+              adId={ad.id}
+              initialFavorited={favorited}
+              className="absolute right-2.5 top-2.5 h-8 w-8"
+              onChange={(next) => onFavoriteChange?.(ad.id, next)}
+            />
+            <AdPromotionBadges
+              isTop={ad.isTop}
+              topUntil={ad.topUntil}
+              isVip={ad.isVip}
+              vipUntil={ad.vipUntil}
+              isUrgent={ad.isUrgent}
+              urgentUntil={ad.urgentUntil}
+              className="absolute left-2.5 top-2.5"
+            />
           </div>
           <div className="p-3">
             <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900">

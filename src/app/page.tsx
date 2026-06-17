@@ -8,26 +8,33 @@ import { PromoBanner } from "@/components/mobile/promo-banner";
 import { CategoryGridCard } from "@/components/mobile/category-grid-card";
 import { AdCardHorizontal } from "@/components/mobile/ad-card-horizontal";
 import { AdCardGrid } from "@/components/mobile/ad-card-grid";
-import { getLatestAds, getAds } from "@/lib/services/ads";
+import { getLatestAds, getAds, getUserFavoriteIds } from "@/lib/services/ads";
 import { getActiveCategories } from "@/lib/services/categories";
+import { auth } from "@/lib/auth";
 
 export default async function HomePage() {
   let latestAds: Awaited<ReturnType<typeof getLatestAds>> = [];
   let allAds: Awaited<ReturnType<typeof getAds>>["data"] = [];
   let categories: Awaited<ReturnType<typeof getActiveCategories>> = [];
+  let favoriteIds: string[] = [];
 
   try {
-    const [latest, allResult, cats] = await Promise.all([
+    const session = await auth();
+    const [latest, allResult, cats, favIds] = await Promise.all([
       getLatestAds(8),
       getAds({ limit: "50" }),
       getActiveCategories(),
+      session?.user?.id ? getUserFavoriteIds(session.user.id) : Promise.resolve([]),
     ]);
     latestAds = latest;
     allAds = allResult.data;
     categories = cats;
+    favoriteIds = favIds;
   } catch {
     // DB unavailable
   }
+
+  const favoriteSet = new Set(favoriteIds);
 
   return (
     <div className="min-h-screen bg-white pb-safe md:bg-secondary/30">
@@ -58,8 +65,7 @@ export default async function HomePage() {
             label="Barchasi"
             subtitle="Ko'rish"
             href="/ads"
-            emoji="→"
-            variant="dark"
+            icon="grid"
           />
           {categories.length === 0 && (
             <>
@@ -116,7 +122,13 @@ export default async function HomePage() {
 
           <div className="grid grid-cols-2 gap-2.5 px-4 md:grid-cols-4 md:gap-3">
             {allAds.map((ad, i) => (
-              <AdCardGrid key={ad.id} ad={ad} categories={categories} index={i} />
+              <AdCardGrid
+                key={ad.id}
+                ad={ad}
+                categories={categories}
+                index={i}
+                favorited={favoriteSet.has(ad.id)}
+              />
             ))}
           </div>
 

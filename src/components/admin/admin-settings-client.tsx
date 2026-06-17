@@ -14,6 +14,7 @@ import {
   Database,
   Globe,
   LogOut,
+  Coins,
 } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { SettingsRow } from "./settings-row";
@@ -31,6 +32,7 @@ export function AdminSettingsClient({
       items: [
         { icon: Info, title: "Umumiy ma'lumot", subtitle: "Platforma sozlamalari" },
         { icon: Tags, title: "Kategoriyalar", subtitle: "E'lon toifalari", href: "/admin/categories" },
+        { icon: Coins, title: "Monetka", subtitle: "Balans va narxlar", href: "/admin/monetization" },
         { icon: MapPin, title: "Hududlar", subtitle: "Chust tumanlari" },
         { icon: FileText, title: "E'lon sozlamalari", subtitle: "Moderatsiya qoidalari" },
         { icon: Upload, title: "Yuklash sozlamalari", subtitle: "Rasm va fayllar" },

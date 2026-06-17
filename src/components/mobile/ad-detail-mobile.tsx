@@ -18,12 +18,13 @@ import { AdCardGrid } from "@/components/mobile/ad-card-grid";
 import { DialogRoot, DialogTrigger, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { formatPrice, formatRelativeDate } from "@/lib/utils";
-import { toggleAdFavorite, submitReport } from "@/lib/actions";
+import { toggleAdFavorite, submitReport, trackContactClick } from "@/lib/actions";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import type { AdWithImages, CategoryData } from "@/types";
 import { findCategory } from "@/lib/category-helpers";
 import { CategoryEmoji } from "@/components/ui/category-emoji";
+import { AdPromotionBadges } from "@/components/ui/ad-promotion-badges";
 
 const MiniMap = dynamic(
   () => import("@/components/mobile/mobile-map-view").then((m) => m.MiniMap),
@@ -138,9 +139,20 @@ export function AdDetailMobile({
           className="rounded-[20px] bg-white p-4 card-shadow"
         >
           <div className="flex items-start justify-between gap-3">
-            <h1 className="text-[18px] font-bold leading-snug text-gray-900">
-              {ad.title}
-            </h1>
+            <div className="min-w-0 flex-1">
+              <AdPromotionBadges
+                isTop={ad.isTop}
+                topUntil={ad.topUntil}
+                isVip={ad.isVip}
+                vipUntil={ad.vipUntil}
+                isUrgent={ad.isUrgent}
+                urgentUntil={ad.urgentUntil}
+                className="mb-2"
+              />
+              <h1 className="text-[18px] font-bold leading-snug text-gray-900">
+                {ad.title}
+              </h1>
+            </div>
             {ad.priceNegotiable && (
               <span className="flex-shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-700">
                 Kelishiladi
@@ -166,6 +178,7 @@ export function AdDetailMobile({
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
             <a
               href={`tel:${ad.phone}`}
+              onClick={() => void trackContactClick(ad.id)}
               className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-primary px-3 text-[13px] font-semibold text-white transition-transform active:scale-[0.98]"
             >
               <Phone className="h-4 w-4" />
