@@ -4,20 +4,15 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { getPrisma } from "@/lib/db";
+import { authConfig } from "@/lib/auth.config";
 import type { UserRole } from "@prisma/client";
 
 const authUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  trustHost: true,
-  // Secure cookies only over HTTPS — otherwise session is lost after OAuth on HTTP/IP
+  ...authConfig,
   useSecureCookies: authUrl.startsWith("https://"),
   adapter: PrismaAdapter(getPrisma()),
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
@@ -67,6 +62,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async jwt({ token, user }) {
       if (user?.id) {
         token.id = user.id;
@@ -95,13 +91,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = (token.id ?? token.sub) as string;
-        session.user.role = (token.role as UserRole) ?? "USER";
-      }
-      return session;
     },
     async signIn({ user }) {
       if (!user.email) return false;

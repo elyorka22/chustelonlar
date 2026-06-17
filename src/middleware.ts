@@ -1,23 +1,22 @@
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { authConfig } from "@/lib/auth.config";
 
-export async function middleware(request: NextRequest) {
+const { auth } = NextAuth(authConfig);
+
+export default auth((request) => {
   const { pathname } = request.nextUrl;
+  const session = request.auth;
 
   const protectedRoutes = ["/create", "/dashboard"];
   const adminRoutes = ["/admin"];
 
-  const isProtected = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
+  const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
   const isAdmin = adminRoutes.some((route) => pathname.startsWith(route));
 
   if (!isProtected && !isAdmin) {
     return NextResponse.next();
   }
-
-  const session = await auth();
 
   if (!session?.user) {
     const loginUrl = new URL("/login", request.url);
@@ -30,7 +29,7 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [

@@ -1,18 +1,14 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { HomeSearchBar } from "@/components/mobile/home-search-bar";
 import { PromoBanner } from "@/components/mobile/promo-banner";
 import { CategoryGridCard } from "@/components/mobile/category-grid-card";
 import { AdCardHorizontal } from "@/components/mobile/ad-card-horizontal";
-import { AdCardGrid } from "@/components/mobile/ad-card-grid";
-import { getUserFavoriteIds } from "@/lib/services/ads";
+import { HomeFavoritesGrid } from "@/components/mobile/home-favorites-grid";
 import {
   getCachedActiveCategories,
   getCachedLatestAds,
   getCachedHomeAdsGrid,
 } from "@/lib/cached-data";
-import { auth } from "@/lib/auth";
-import { AdGridSkeleton } from "@/components/mobile/shimmer";
 
 export const revalidate = 60;
 
@@ -129,9 +125,7 @@ export default async function HomePage() {
             </h2>
           </div>
 
-          <Suspense fallback={<div className="px-4"><AdGridSkeleton /></div>}>
-            <HomeFavoritesGrid ads={allAds} categories={categories} />
-          </Suspense>
+          <HomeFavoritesGrid ads={allAds} categories={categories} />
 
           <div className="mt-4 px-4 text-center">
             <Link
@@ -144,33 +138,6 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-    </div>
-  );
-}
-
-async function HomeFavoritesGrid({
-  ads,
-  categories,
-}: {
-  ads: Awaited<ReturnType<typeof getCachedHomeAdsGrid>>;
-  categories: Awaited<ReturnType<typeof getCachedActiveCategories>>;
-}) {
-  const session = await auth();
-  const favoriteIds =
-    session?.user?.id ? await getUserFavoriteIds(session.user.id) : [];
-  const favoriteSet = new Set(favoriteIds);
-
-  return (
-    <div className="grid grid-cols-2 gap-2.5 px-4 md:grid-cols-4 md:gap-3">
-      {ads.map((ad, i) => (
-        <AdCardGrid
-          key={ad.id}
-          ad={ad}
-          categories={categories}
-          index={i}
-          favorited={favoriteSet.has(ad.id)}
-        />
-      ))}
     </div>
   );
 }

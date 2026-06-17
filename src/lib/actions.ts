@@ -298,6 +298,22 @@ export async function removeAd(adId: string) {
   return { success: true };
 }
 
+export async function getMyFavoriteAdIds(): Promise<string[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const { getUserFavoriteIds } = await import("@/lib/services/ads");
+  return getUserFavoriteIds(session.user.id);
+}
+
+export async function checkAdFavorited(adId: string): Promise<boolean> {
+  const session = await auth();
+  if (!session?.user?.id) return false;
+
+  const { isFavorited } = await import("@/lib/services/ads");
+  return isFavorited(session.user.id, adId);
+}
+
 export async function toggleAdFavorite(adId: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Avtorizatsiya talab qilinadi" };

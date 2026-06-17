@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
-import { getSimilarAds, incrementAdViews, isFavorited } from "@/lib/services/ads";
+import { getSimilarAds, incrementAdViews } from "@/lib/services/ads";
 import {
   getCachedAdById,
   getCachedActiveCategories,
 } from "@/lib/cached-data";
-import { auth } from "@/lib/auth";
 import { AdDetailMobile } from "@/components/mobile/ad-detail-mobile";
 import type { Metadata } from "next";
 
@@ -37,10 +36,8 @@ export default async function AdDetailPage({ params }: AdPageProps) {
 
   void incrementAdViews(id);
 
-  const session = await auth();
-  const [similarAds, favorited, categories] = await Promise.all([
+  const [similarAds, categories] = await Promise.all([
     getSimilarAds(id, ad.category),
-    session?.user?.id ? isFavorited(session.user.id, id) : false,
     getCachedActiveCategories(),
   ]);
 
@@ -48,7 +45,6 @@ export default async function AdDetailPage({ params }: AdPageProps) {
     <AdDetailMobile
       ad={ad}
       similarAds={similarAds}
-      isFavorited={favorited}
       categories={categories}
     />
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import {
@@ -19,7 +19,7 @@ import { AdCardGrid } from "@/components/mobile/ad-card-grid";
 import { DialogRoot, DialogTrigger, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { formatPrice, formatRelativeDate } from "@/lib/utils";
-import { toggleAdFavorite, submitReport, trackContactClick } from "@/lib/actions";
+import { toggleAdFavorite, submitReport, trackContactClick, checkAdFavorited } from "@/lib/actions";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import type { AdWithImages, CategoryData } from "@/types";
@@ -35,24 +35,42 @@ const MiniMap = dynamic(
 interface AdDetailMobileProps {
   ad: AdWithImages;
   similarAds: AdWithImages[];
-  isFavorited: boolean;
   categories?: CategoryData[];
 }
 
 export function AdDetailMobile({
   ad,
   similarAds,
-  isFavorited: initialFavorited,
   categories = [],
 }: AdDetailMobileProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [activeImage, setActiveImage] = useState(0);
-  const [favorited, setFavorited] = useState(initialFavorited);
+  const [favorited, setFavorited] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
   const [warningOpen, setWarningOpen] = useState(false);
 
   const category = findCategory(categories, ad.category);
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      setFavorited(false);
+      return;
+    }
+
+    let cancelled = false;
+    checkAdFavorited(ad.id)
+      .then((value) => {
+        if (!cancelled) setFavorited(value);
+      })
+      .catch(() => {
+        if (!cancelled) setFavorited(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ad.id, status]);
 
   const handleFavorite = async () => {
     if (!session) { toast.error("Avval tizimga kiring"); return; }
