@@ -9,10 +9,17 @@ export const metadata = {
 };
 
 export default async function ChegirmalarPage() {
-  const [items, mapItems] = await Promise.all([
-    getCachedChegirmalar(""),
-    getCachedMapChegirmalar(""),
-  ]);
+  let items: Awaited<ReturnType<typeof getCachedChegirmalar>> = [];
+  let mapItems: Awaited<ReturnType<typeof getCachedMapChegirmalar>> = [];
+
+  try {
+    [items, mapItems] = await Promise.all([
+      getCachedChegirmalar(""),
+      getCachedMapChegirmalar(""),
+    ]);
+  } catch {
+    // DB unavailable during build or cold start — client refetches via API
+  }
 
   return <ChegirmalarClient initialItems={items} initialMapItems={mapItems} />;
 }
