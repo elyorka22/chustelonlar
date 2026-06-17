@@ -1,4 +1,9 @@
 import { getPrisma } from "@/lib/db";
+import {
+  resolveCategoryFreeLimit,
+  resolveCategoryListingCost,
+  type CategoryPricingFields,
+} from "@/lib/category-pricing";
 import type { CategoryPricingType, CoinTransactionType, MonetizationSettings } from "@prisma/client";
 
 const SETTINGS_ID = "default";
@@ -63,11 +68,12 @@ export async function calculateListingCost(
 
   const settings = await getMonetizationSettings();
   const published = await countUserCategoryListings(userId, categorySlug);
-
-  let coinCost = category.listingCoinCost;
-  if (coinCost === 0) {
-    coinCost = resolveDefaultCategoryCost(categorySlug, settings);
-  }
+  const pricing: CategoryPricingFields = {
+    slug: category.slug,
+    pricingType: category.pricingType,
+    listingCoinCost: category.listingCoinCost,
+    freeLimit: category.freeLimit,
+  };
 
   if (category.pricingType === "FREE") {
     return {
@@ -78,8 +84,10 @@ export async function calculateListingCost(
     };
   }
 
+  const coinCost = resolveCategoryListingCost(pricing, settings);
+
   if (category.pricingType === "LIMITED_FREE") {
-    const limit = category.freeLimit || settings.freeListingsLimit;
+    const limit = resolveCategoryFreeLimit(pricing, settings.freeListingsLimit);
     const freeRemaining = Math.max(0, limit - published);
     if (freeRemaining > 0) {
       return {
@@ -103,20 +111,6 @@ export async function calculateListingCost(
     freeRemaining: 0,
     pricingType: "PAID",
   };
-}
-
-function resolveDefaultCategoryCost(
-  categorySlug: string,
-  settings: MonetizationSettingsData
-): number {
-  const upper = categorySlug.toUpperCase();
-  if (upper.includes("AUTO") || upper.includes("AVTO")) return settings.autoCategoryCost;
-  if (upper.includes("REAL") || upper.includes("MULK") || upper.includes("HOUSE"))
-    return settings.houseSaleCategoryCost;
-  if (upper.includes("RENT")) return settings.rentCategoryCost;
-  if (upper.includes("JOB") || upper.includes("ISH") || upper.includes("OTHER"))
-    return settings.jobCategoryCost;
-  return settings.freeListingsLimit > 0 ? 0 : 2;
 }
 
 export function getPromotionCost(

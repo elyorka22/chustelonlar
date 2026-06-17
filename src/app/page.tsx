@@ -21,17 +21,28 @@ export default async function HomePage() {
   let allAds: Awaited<ReturnType<typeof getCachedHomeAdsGrid>> = [];
   let categories: Awaited<ReturnType<typeof getCachedActiveCategories>> = [];
 
-  try {
-    const [latest, gridAds, cats] = await Promise.all([
-      getCachedLatestAds(8),
-      getCachedHomeAdsGrid(),
-      getCachedActiveCategories(),
-    ]);
-    latestAds = latest;
-    allAds = gridAds;
-    categories = cats;
-  } catch {
-    // DB unavailable
+  const [latestResult, gridResult, categoriesResult] = await Promise.allSettled([
+    getCachedLatestAds(8),
+    getCachedHomeAdsGrid(),
+    getCachedActiveCategories(),
+  ]);
+
+  if (latestResult.status === "fulfilled") {
+    latestAds = latestResult.value;
+  } else {
+    console.error("[homepage] latest ads failed:", latestResult.reason);
+  }
+
+  if (gridResult.status === "fulfilled") {
+    allAds = gridResult.value;
+  } else {
+    console.error("[homepage] ads grid failed:", gridResult.reason);
+  }
+
+  if (categoriesResult.status === "fulfilled") {
+    categories = categoriesResult.value;
+  } else {
+    console.error("[homepage] categories failed:", categoriesResult.reason);
   }
 
   return (

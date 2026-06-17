@@ -13,6 +13,7 @@ import {
 } from "@/lib/actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { describeCategoryPricing } from "@/lib/category-pricing";
 import type { CategoryData } from "@/types";
 import type { MonetizationSettings } from "@prisma/client";
 
@@ -194,15 +195,20 @@ export function AdminMonetizationClient({
             {numInput("TOP narxi", "topPromotionCost", "monetka")}
             {numInput("VIP narxi", "vipPromotionCost", "monetka")}
             {numInput("Shoshilinch narxi", "urgentPromotionCost", "monetka")}
-            {numInput("Avto kategoriya", "autoCategoryCost", "monetka")}
-            {numInput("Uy sotish", "houseSaleCategoryCost", "monetka")}
-            {numInput("Ijara", "rentCategoryCost", "monetka")}
-            {numInput("Ish e'lonlari", "jobCategoryCost", "monetka")}
-            {numInput("Bepul limit (default)", "freeListingsLimit", "ta")}
+            {numInput("Avto (standart)", "autoCategoryCost", "monetka")}
+            {numInput("Uy sotish (standart)", "houseSaleCategoryCost", "monetka")}
+            {numInput("Ijara (standart)", "rentCategoryCost", "monetka")}
+            {numInput("Ish e'lonlari (standart)", "jobCategoryCost", "monetka")}
+            {numInput("Bepul limit (standart)", "freeListingsLimit", "ta")}
             {numInput("TOP davomiyligi", "topDurationDays", "kun")}
             {numInput("VIP davomiyligi", "vipDurationDays", "kun")}
             {numInput("Shoshilinch davomiyligi", "urgentDurationDays", "kun")}
           </div>
+
+          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-900 ring-1 ring-amber-100">
+            Standart narxlar faqat kategoriyada narx <strong>0</strong> bo&apos;lganda qo&apos;llaniladi.
+            Har bir kategoriya uchun pastdagi sozlamalar ustunlik qiladi.
+          </p>
 
           <p className="mt-4 text-[12px] font-bold uppercase tracking-wide text-[#94A3B8]">
             Admin kontakt (yetarli monetka yo&apos;q modal)
@@ -336,10 +342,33 @@ export function AdminMonetizationClient({
         {/* Category pricing */}
         <section className="rounded-[22px] bg-white p-4 shadow-[0_2px_16px_rgba(15,23,42,0.06)]">
           <h2 className="text-[15px] font-extrabold text-[#0F172A]">Kategoriya narxlari</h2>
+          <p className="mt-1 text-[12px] text-[#64748B]">
+            Asosiy sozlama shu yerda. Global standart narxlar faqat fallback sifatida ishlaydi.
+          </p>
           <div className="mt-3 space-y-3">
-            {categories.map((cat) => (
+            {categories.map((cat) => {
+              const effective = describeCategoryPricing(
+                {
+                  slug: cat.slug,
+                  pricingType: cat.pricingType ?? "FREE",
+                  listingCoinCost: cat.listingCoinCost ?? 0,
+                  freeLimit: cat.freeLimit ?? 0,
+                },
+                settings
+              );
+
+              return (
               <div key={cat.slug} className="rounded-xl bg-[#F8FAFC] p-3 ring-1 ring-[#E2E8F0]">
-                <p className="text-[14px] font-bold text-[#0F172A]">{cat.label}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-[14px] font-bold text-[#0F172A]">{cat.label}</p>
+                  <p className="shrink-0 text-[11px] font-semibold text-primary">
+                    {effective.pricingType === "FREE"
+                      ? "Bepul"
+                      : effective.pricingType === "LIMITED_FREE"
+                        ? `${effective.freeLimit} ta bepul, keyin ${effective.listingCost} monetka`
+                        : `${effective.listingCost} monetka`}
+                  </p>
+                </div>
                 <div className="mt-2 grid grid-cols-3 gap-2">
                   <select
                     value={cat.pricingType ?? "FREE"}
@@ -365,7 +394,8 @@ export function AdminMonetizationClient({
                       )
                     }
                     placeholder="Narx"
-                    className="h-10 rounded-lg bg-white px-2 text-[12px] font-bold outline-none ring-1 ring-[#E2E8F0]"
+                    disabled={(cat.pricingType ?? "FREE") === "FREE"}
+                    className="h-10 rounded-lg bg-white px-2 text-[12px] font-bold outline-none ring-1 ring-[#E2E8F0] disabled:opacity-50"
                   />
                   <input
                     type="number"
@@ -378,9 +408,20 @@ export function AdminMonetizationClient({
                       )
                     }
                     placeholder="Limit"
-                    className="h-10 rounded-lg bg-white px-2 text-[12px] font-bold outline-none ring-1 ring-[#E2E8F0]"
+                    disabled={(cat.pricingType ?? "FREE") !== "LIMITED_FREE"}
+                    className="h-10 rounded-lg bg-white px-2 text-[12px] font-bold outline-none ring-1 ring-[#E2E8F0] disabled:opacity-50"
                   />
                 </div>
+                {(cat.pricingType ?? "FREE") !== "FREE" && (
+                  <p className="mt-2 text-[11px] text-[#64748B]">
+                    {effective.usesGlobalCost && effective.pricingType !== "FREE"
+                      ? "Narx 0 — standart global narx ishlatiladi. "
+                      : ""}
+                    {effective.usesGlobalLimit && effective.pricingType === "LIMITED_FREE"
+                      ? `Limit 0 — global limit (${settings.freeListingsLimit} ta) ishlatiladi.`
+                      : ""}
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => saveCategoryPricing(cat)}
@@ -390,7 +431,8 @@ export function AdminMonetizationClient({
                   Saqlash
                 </button>
               </div>
-            ))}
+            );
+            })}
           </div>
         </section>
       </motion.div>

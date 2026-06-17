@@ -451,6 +451,7 @@ export async function moderateAd(
 
   revalidatePath("/admin");
   revalidatePath("/admin/ads");
+  revalidatePath("/");
   revalidatePath("/ads");
   return { success: true };
 }
