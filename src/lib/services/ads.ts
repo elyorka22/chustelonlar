@@ -293,7 +293,7 @@ export async function createAd(
     include: adInclude,
   });
 
-  void afterAdMutation();
+  await afterAdMutation();
   return ad;
 }
 
@@ -354,7 +354,7 @@ export async function purchaseAdPromotion(
     data: promoData,
     include: adInclude,
   }).then((result) => {
-    void afterAdMutation();
+    await afterAdMutation();
     return result;
   });
 }
@@ -384,7 +384,7 @@ export async function toggleAdPaused(userId: string, adId: string, paused: boole
     data: { isPaused: paused },
     include: adInclude,
   }).then((result) => {
-    void afterAdMutation();
+    await afterAdMutation();
     return result;
   });
 }
@@ -422,7 +422,7 @@ export async function renewUserAd(userId: string, adId: string) {
     data: { updatedAt: new Date(), isPaused: false },
     include: adInclude,
   }).then((result) => {
-    void afterAdMutation();
+    await afterAdMutation();
     return result;
   });
 }
@@ -471,7 +471,7 @@ export async function updateAdStatus(
     data,
   });
 
-  void afterAdMutation();
+  await afterAdMutation();
   return updated;
 }
 
@@ -490,7 +490,7 @@ export async function deleteAd(adId: string, userId: string) {
     },
   });
 
-  void afterAdMutation();
+  await afterAdMutation();
   return deleted;
 }
 
@@ -675,6 +675,15 @@ export async function getPendingAds() {
     where: { status: "PENDING" },
     include: adInclude,
     orderBy: { createdAt: "asc" },
+  });
+}
+
+export async function getAdminAds() {
+  return getPrisma().ad.findMany({
+    where: { status: { not: "DELETED" } },
+    include: adInclude,
+    orderBy: { createdAt: "desc" },
+    take: 200,
   });
 }
 

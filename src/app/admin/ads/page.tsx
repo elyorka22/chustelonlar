@@ -1,4 +1,4 @@
-import { getPendingAds, getAnalytics, getReports } from "@/lib/services/ads";
+import { getAdminAds, getAnalytics, getReports } from "@/lib/services/ads";
 import { getAllCategories } from "@/lib/services/categories";
 import { AdminAdsClient } from "@/components/admin/admin-ads-client";
 export const dynamic = "force-dynamic";
@@ -10,8 +10,8 @@ export const metadata = {
 };
 
 export default async function AdminAdsPage() {
-  const [pendingAds, analytics, reports, categories] = await Promise.all([
-    getPendingAds(),
+  const [ads, analytics, reports, categories] = await Promise.all([
+    getAdminAds(),
     getAnalytics(),
     getReports(),
     getAllCategories(),
@@ -19,7 +19,7 @@ export default async function AdminAdsPage() {
 
   return (
     <AdminAdsClient
-      pendingAds={pendingAds.map((ad) => ({
+      ads={ads.map((ad) => ({
         id: ad.id,
         title: ad.title,
         price: ad.price,
@@ -27,6 +27,7 @@ export default async function AdminAdsPage() {
         priceNegotiable: ad.priceNegotiable,
         category: ad.category,
         district: ad.district,
+        status: ad.status,
         createdAt: ad.createdAt,
         images: ad.images,
       }))}

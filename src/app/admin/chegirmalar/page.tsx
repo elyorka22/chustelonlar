@@ -1,5 +1,5 @@
 import { getAnalytics, getReports } from "@/lib/services/ads";
-import { getPendingChegirmalar } from "@/lib/services/chegirmalar";
+import { getAdminChegirmalar } from "@/lib/services/chegirmalar";
 import { AdminChegirmalarClient } from "@/components/admin/admin-chegirmalar-client";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export const metadata = {
 
 export default async function AdminChegirmalarPage() {
   const [items, analytics, reports] = await Promise.all([
-    getPendingChegirmalar(),
+    getAdminChegirmalar(),
     getAnalytics(),
     getReports(),
   ]);

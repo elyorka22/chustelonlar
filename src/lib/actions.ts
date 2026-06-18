@@ -322,6 +322,7 @@ export async function removeAd(adId: string) {
 
   revalidatePath("/dashboard");
   revalidatePath("/ads");
+  revalidatePath("/map");
   revalidatePath(`/ads/${adId}`);
   revalidatePath(`/dashboard/ads/${adId}`);
   return { success: true };
@@ -514,6 +515,7 @@ export async function adminDeleteAd(adId: string) {
   revalidatePath("/admin/ads");
   revalidatePath("/admin/reports");
   revalidatePath("/ads");
+  revalidatePath("/map");
   revalidatePath(`/ads/${adId}`);
   return { success: true };
 }

@@ -1,6 +1,6 @@
 import Redis from "ioredis";
 import { isBuildPhase } from "@/lib/runtime";
-import { memCacheGet, memCacheSet, memCacheDel } from "@/lib/memory-cache";
+import { memCacheGet, memCacheSet, memCacheDel, memCacheDelPrefix } from "@/lib/memory-cache";
 
 let redis: Redis | null = null;
 
@@ -103,6 +103,8 @@ export async function cacheDel(key: string): Promise<void> {
 }
 
 export async function cacheDelByPrefix(prefix: string): Promise<void> {
+  memCacheDelPrefix(prefix);
+
   const client = getRedis();
   if (!client) return;
 

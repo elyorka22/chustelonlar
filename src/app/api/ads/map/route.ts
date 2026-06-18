@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCachedMapAds } from "@/lib/cached-data";
+import { getMapAds } from "@/lib/services/ads";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET(request: NextRequest) {
   try {
-    const category = request.nextUrl.searchParams.get("category") || "";
-    const ads = await getCachedMapAds(category);
+    const category = request.nextUrl.searchParams.get("category") || undefined;
+    const ads = await getMapAds(category);
     return NextResponse.json(ads, {
       headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        "Cache-Control": "no-store, max-age=0",
       },
     });
   } catch (error) {

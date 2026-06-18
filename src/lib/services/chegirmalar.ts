@@ -146,6 +146,19 @@ export async function getPendingChegirmalar(): Promise<ChegirmaData[]> {
   return items.map(toChegirmaData);
 }
 
+export async function getAdminChegirmalar(): Promise<ChegirmaData[]> {
+  const items = await getPrisma().chegirma.findMany({
+    where: { status: { not: "DELETED" } },
+    orderBy: { createdAt: "desc" },
+    take: 200,
+    include: {
+      createdBy: { select: { id: true, name: true } },
+    },
+  });
+
+  return items.map(toChegirmaData);
+}
+
 export async function createChegirma(userId: string, input: CreateChegirmaInput) {
   const data = createChegirmaSchema.parse(input);
 
