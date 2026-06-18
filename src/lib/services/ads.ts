@@ -349,14 +349,13 @@ export async function purchaseAdPromotion(
     throw error;
   }
 
-  return getPrisma().ad.update({
+  const result = await getPrisma().ad.update({
     where: { id: adId },
     data: promoData,
     include: adInclude,
-  }).then((result) => {
-    await afterAdMutation();
-    return result;
   });
+  await afterAdMutation();
+  return result;
 }
 
 export async function incrementContactClicks(adId: string): Promise<void> {
@@ -379,14 +378,13 @@ export async function toggleAdPaused(userId: string, adId: string, paused: boole
   });
   if (!ad) throw new Error("E'lon topilmadi yoki faol emas");
 
-  return getPrisma().ad.update({
+  const result = await getPrisma().ad.update({
     where: { id: adId },
     data: { isPaused: paused },
     include: adInclude,
-  }).then((result) => {
-    await afterAdMutation();
-    return result;
   });
+  await afterAdMutation();
+  return result;
 }
 
 export async function renewUserAd(userId: string, adId: string) {
@@ -417,14 +415,13 @@ export async function renewUserAd(userId: string, adId: string) {
     }
   }
 
-  return getPrisma().ad.update({
+  const result = await getPrisma().ad.update({
     where: { id: adId },
     data: { updatedAt: new Date(), isPaused: false },
     include: adInclude,
-  }).then((result) => {
-    await afterAdMutation();
-    return result;
   });
+  await afterAdMutation();
+  return result;
 }
 
 export async function getUserAds(userId: string) {
