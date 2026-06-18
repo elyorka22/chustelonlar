@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/session";
+import { requireBusiness } from "@/lib/session";
 import { getUserCoinWallet } from "@/lib/services/coins";
 import { CreateChegirmaMobile } from "@/components/mobile/create-chegirma-mobile";
 
@@ -9,7 +9,7 @@ export const fetchCache = "force-no-store";
 export const metadata = { title: "Aksiya joylash" };
 
 export default async function CreateChegirmaPage() {
-  const user = await requireAuth();
+  const user = await requireBusiness();
   const wallet = await getUserCoinWallet(user.id);
 
   return <CreateChegirmaMobile initialBalance={wallet.coinBalance} />;

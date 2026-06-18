@@ -26,7 +26,7 @@ export const authConfig = {
       if (session.user) {
         session.user.id = (token.id ?? token.sub) as string;
         session.user.role =
-          (token.role as "USER" | "MODERATOR" | "ADMIN" | "BANNED" | undefined) ??
+          (token.role as "USER" | "BUSINESS" | "MODERATOR" | "ADMIN" | "BANNED" | undefined) ??
           "USER";
       }
       return session;

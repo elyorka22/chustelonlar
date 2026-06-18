@@ -121,12 +121,14 @@ export function AdDetailMobile({
         )}
         <div className="absolute right-3 top-3 flex gap-2">
           <button
+            type="button"
             onClick={handleFavorite}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-md"
           >
             <Heart className={`h-5 w-5 ${favorited ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
           </button>
           <button
+            type="button"
             onClick={handleShare}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-md"
           >

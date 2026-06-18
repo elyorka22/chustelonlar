@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Minus, Coins, Save, Loader2 } from "lucide-react";
+import { Search, Plus, Minus, Coins, Save, Loader2, Gift, Store } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
 import { isActionError } from "@/lib/action-result";
@@ -11,6 +11,8 @@ import {
   adminSearchUsers,
   adminUpdateMonetizationSettings,
   adminUpdateCategoryPricing,
+  adminDistributeUserWelcomeBonuses,
+  adminDistributeBusinessWelcomeBonuses,
 } from "@/lib/actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -72,6 +74,8 @@ export function AdminMonetizationClient({
         contactTelegram: settings.contactTelegram ?? undefined,
         contactPhone: settings.contactPhone ?? undefined,
         contactWhatsapp: settings.contactWhatsapp ?? undefined,
+        newUserWelcomeBonus: settings.newUserWelcomeBonus,
+        newBusinessWelcomeBonus: settings.newBusinessWelcomeBonus,
       });
       if (isActionError(result)) {
         toast.error(result.error);
@@ -123,6 +127,28 @@ export function AdminMonetizationClient({
             : u
         )
       );
+    });
+  };
+
+  const handleDistributeUserBonuses = () => {
+    startTransition(async () => {
+      const result = await adminDistributeUserWelcomeBonuses();
+      if (isActionError(result)) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`${result.count ?? 0} ta yangi foydalanuvchiga bonus berildi`);
+    });
+  };
+
+  const handleDistributeBusinessBonuses = () => {
+    startTransition(async () => {
+      const result = await adminDistributeBusinessWelcomeBonuses();
+      if (isActionError(result)) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`${result.count ?? 0} ta biznes akkauntga bonus berildi`);
     });
   };
 
@@ -241,6 +267,55 @@ export function AdminMonetizationClient({
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Saqlash
           </button>
+        </section>
+
+        {/* Audience welcome bonuses */}
+        <section className="rounded-[22px] bg-white p-4 shadow-[0_2px_16px_rgba(15,23,42,0.06)]">
+          <h2 className="flex items-center gap-2 text-[15px] font-extrabold text-[#0F172A]">
+            <Gift className="h-4 w-4 text-violet-500" />
+            Auditoriya bonuslari
+          </h2>
+          <p className="mt-2 text-[12px] leading-relaxed text-[#64748B]">
+            Yangi foydalanuvchilar ro&apos;yxatdan o&apos;tganda yoki kirganda avtomatik bonus oladi.
+            Biznes akkauntga o&apos;tganlar alohida biznes bonusini oladi (bir marta).
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {numInput("Yangi foydalanuvchi", "newUserWelcomeBonus", "monetka")}
+            {numInput("Yangi biznes", "newBusinessWelcomeBonus", "monetka")}
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveSettings}
+            disabled={isPending}
+            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-primary/10 text-[13px] font-bold text-primary disabled:opacity-50"
+          >
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Bonus summalarini saqlash
+          </button>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={handleDistributeUserBonuses}
+              disabled={isPending}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-violet-500 text-[13px] font-bold text-white disabled:opacity-50"
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gift className="h-4 w-4" />}
+              Yangi foydalanuvchilarga tarqatish
+            </button>
+            <button
+              type="button"
+              onClick={handleDistributeBusinessBonuses}
+              disabled={isPending}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-amber-500 text-[13px] font-bold text-[#0F172A] disabled:opacity-50"
+            >
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
+              Biznes akkauntlarga tarqatish
+            </button>
+          </div>
+          <p className="mt-3 rounded-xl bg-violet-50 px-3 py-2 text-[11px] leading-relaxed text-violet-900 ring-1 ring-violet-100">
+            Tarqatish faqat hali bonus olmagan foydalanuvchilarga beriladi (oldingi ro&apos;yxatdan
+            o&apos;tganlar uchun qo&apos;lda ishga tushirish).
+          </p>
         </section>
 
         {/* User coin management */}

@@ -13,6 +13,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   useSecureCookies: authUrl.startsWith("https://"),
   adapter: PrismaAdapter(getPrisma()),
+  events: {
+    async createUser({ user }) {
+      if (user.id) {
+        const { tryGrantUserWelcomeBonus } = await import(
+          "@/lib/services/welcome-bonuses"
+        );
+        await tryGrantUserWelcomeBonus(user.id);
+      }
+    },
+  },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { HomeSearchBar } from "@/components/mobile/home-search-bar";
-import { PromoBanner } from "@/components/mobile/promo-banner";
 import { CategoryGridCard } from "@/components/mobile/category-grid-card";
 import { AdCardHorizontal } from "@/components/mobile/ad-card-horizontal";
 import { HomeFavoritesGrid } from "@/components/mobile/home-favorites-grid";
@@ -8,7 +7,6 @@ import {
   getCachedActiveCategories,
   getCachedLatestAds,
   getCachedHomeAdsGrid,
-  getCachedPromoBanners,
 } from "@/lib/cached-data";
 
 export const revalidate = 60;
@@ -17,15 +15,12 @@ export default async function HomePage() {
   let latestAds: Awaited<ReturnType<typeof getCachedLatestAds>> = [];
   let allAds: Awaited<ReturnType<typeof getCachedHomeAdsGrid>> = [];
   let categories: Awaited<ReturnType<typeof getCachedActiveCategories>> = [];
-  let promoBanners: Awaited<ReturnType<typeof getCachedPromoBanners>> = [];
 
-  const [latestResult, gridResult, categoriesResult, bannersResult] =
-    await Promise.allSettled([
-      getCachedLatestAds(8),
-      getCachedHomeAdsGrid(),
-      getCachedActiveCategories(),
-      getCachedPromoBanners(),
-    ]);
+  const [latestResult, gridResult, categoriesResult] = await Promise.allSettled([
+    getCachedLatestAds(8),
+    getCachedHomeAdsGrid(),
+    getCachedActiveCategories(),
+  ]);
 
   if (latestResult.status === "fulfilled") {
     latestAds = latestResult.value;
@@ -45,26 +40,13 @@ export default async function HomePage() {
     console.error("[homepage] categories failed:", categoriesResult.reason);
   }
 
-  if (bannersResult.status === "fulfilled") {
-    promoBanners = bannersResult.value;
-  } else {
-    console.error("[homepage] banners failed:", bannersResult.reason);
-  }
-
   return (
     <div className="min-h-screen bg-white pb-safe md:bg-secondary/30">
-      {/* Search */}
       <section className="sticky top-0 z-30 bg-white/95 px-4 pb-3 pt-3 backdrop-blur-md md:static md:mx-auto md:max-w-2xl md:pt-6">
         <HomeSearchBar categories={categories} />
       </section>
 
-      {/* Banner */}
-      <section className="px-4 pt-1 md:mx-auto md:max-w-2xl">
-        <PromoBanner banners={promoBanners} />
-      </section>
-
-      {/* Categories — 3-column super-app grid */}
-      <section className="px-4 pt-5 md:mx-auto md:max-w-2xl">
+      <section className="px-4 pt-4 md:mx-auto md:max-w-2xl">
         <div className="grid grid-cols-3 gap-2.5">
           {categories.map((cat) => (
             <CategoryGridCard
@@ -97,7 +79,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Latest ads carousel */}
       <section className="pt-6 md:mx-auto md:max-w-4xl">
         <div className="mb-3 flex items-center justify-between px-4">
           <h2 className="text-[18px] font-bold text-gray-900">
@@ -126,7 +107,6 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* All ads grid — favorites loaded in parallel via Suspense */}
       {allAds.length > 0 && (
         <section className="pt-4 pb-8 md:mx-auto md:max-w-4xl">
           <div className="mb-3 px-4">

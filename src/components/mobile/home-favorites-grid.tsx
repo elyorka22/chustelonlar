@@ -49,6 +49,17 @@ export function HomeFavoritesGrid({ ads, categories }: HomeFavoritesGridProps) {
           categories={categories}
           index={i}
           favorited={favoriteSet.has(ad.id)}
+          onFavoriteChange={(adId, next) => {
+            setFavoriteSet((prev) => {
+              const updated = new Set(prev);
+              if (next) {
+                updated.add(adId);
+              } else {
+                updated.delete(adId);
+              }
+              return updated;
+            });
+          }}
         />
       ))}
     </div>

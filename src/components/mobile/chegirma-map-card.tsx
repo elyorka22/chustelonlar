@@ -32,12 +32,12 @@ export function ChegirmaMapCard({ item, onClose }: ChegirmaMapCardProps) {
                   className="object-cover"
                   sizes="64px"
                 />
-                <span className="absolute left-1 top-1 rounded-md bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                  {item.discountLabel}
-                </span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold text-[#64748B]">
+                <span className="inline-block rounded-md bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  {item.discountLabel}
+                </span>
+                <p className="mt-1 text-[11px] font-semibold text-[#64748B]">
                   {item.businessName}
                 </p>
                 <h3 className="truncate text-[14px] font-bold text-gray-900">

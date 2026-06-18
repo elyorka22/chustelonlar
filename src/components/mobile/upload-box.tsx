@@ -11,6 +11,7 @@ interface UploadBoxProps {
   progress: number;
   onUpload: (files: FileList | null) => void;
   onRemove: (index: number) => void;
+  maxImages?: number;
 }
 
 export function UploadBox({
@@ -19,6 +20,7 @@ export function UploadBox({
   progress,
   onUpload,
   onRemove,
+  maxImages = MAX_IMAGES,
 }: UploadBoxProps) {
   return (
     <div className="space-y-3">
@@ -35,7 +37,7 @@ export function UploadBox({
             </button>
           </div>
         ))}
-        {images.length < MAX_IMAGES && (
+        {images.length < maxImages && (
           <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 active:bg-primary/10 transition-colors">
             <Upload className="h-6 w-6 text-primary" />
             <span className="mt-1 text-[10px] font-medium text-primary">Yuklash</span>

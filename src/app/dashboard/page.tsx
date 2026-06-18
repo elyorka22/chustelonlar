@@ -10,7 +10,12 @@ export const fetchCache = "force-no-store";
 
 export const metadata = { title: "Profil" };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ business?: string }>;
+}) {
+  const { business } = await searchParams;
   const user = await requireAuth();
   const profile = await getCurrentUserProfile();
 
@@ -36,6 +41,7 @@ export default async function DashboardPage() {
       dashboardStats={dashboardStats}
       coinValueUzs={settings.coinValueUzs}
       contact={contact}
+      businessRequired={business === "required"}
     />
   );
 }

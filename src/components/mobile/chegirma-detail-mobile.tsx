@@ -22,23 +22,28 @@ export function ChegirmaDetailMobile({ item }: { item: ChegirmaData }) {
     <div className="min-h-screen bg-white pb-8">
       <MobileHeader title="Aksiya" showBack backHref="/chegirmalar" />
 
-      <div className="relative h-52 w-full">
-        <Image
-          src={item.imageUrl}
-          alt={item.title}
-          fill
-          className="object-cover"
-          sizes="100vw"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <span className="absolute left-4 top-4 rounded-full bg-rose-500 px-3 py-1.5 text-[13px] font-extrabold text-white shadow">
-          {item.discountLabel}
-        </span>
+      <div className="w-full">
+        <div className="flex snap-x snap-mandatory gap-0 overflow-x-auto scrollbar-hide">
+          {(item.imageUrls?.length ? item.imageUrls : [item.imageUrl]).map((src, i) => (
+            <div key={src} className="relative h-52 w-full shrink-0 snap-center bg-[#F1F5F9]">
+              <Image
+                src={src}
+                alt={item.title}
+                fill
+                className="object-cover"
+                sizes="100vw"
+                priority={i === 0}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="px-4 pt-4">
-        <p className="text-[13px] font-semibold text-primary">
+        <span className="inline-block rounded-full bg-rose-500 px-3 py-1.5 text-[13px] font-extrabold text-white">
+          {item.discountLabel}
+        </span>
+        <p className="mt-3 text-[13px] font-semibold text-primary">
           {getChegirmaCategoryEmoji(item.category)} {item.businessName}
         </p>
         <h1 className="mt-1 text-[22px] font-extrabold leading-snug text-gray-900">

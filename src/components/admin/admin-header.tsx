@@ -17,7 +17,6 @@ import {
   Tags,
   ChevronRight,
   Home,
-  Image,
   Coins,
   Percent,
 } from "lucide-react";
@@ -28,7 +27,6 @@ const allMenuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
   { href: "/admin/ads", label: "E'lonlar", icon: FileText, adminOnly: false },
   { href: "/admin/categories", label: "Kategoriyalar", icon: Tags, adminOnly: true },
-  { href: "/admin/banners", label: "Bannerlar", icon: Image, adminOnly: true },
   { href: "/admin/chegirmalar", label: "Chegirmalar", icon: Percent, adminOnly: false },
   { href: "/admin/monetization", label: "Monetka", icon: Coins, adminOnly: true },
   { href: "/admin/users", label: "Foydalanuvchilar", icon: Users, adminOnly: true },

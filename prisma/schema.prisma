@@ -9,6 +9,7 @@ datasource db {
 
 enum UserRole {
   USER
+  BUSINESS
   MODERATOR
   ADMIN
   BANNED
@@ -64,29 +65,13 @@ model Category {
   @@map("categories")
 }
 
-model PromoBanner {
-  id        String   @id @default(cuid())
-  title     String
-  subtitle  String
-  href      String   @default("/ads")
-  ctaLabel  String   @default("Ko'rish") @map("cta_label")
-  imageUrl  String?  @map("image_url")
-  bgClass   String   @default("from-violet-500 to-purple-600") @map("bg_class")
-  sortOrder Int      @default(0) @map("sort_order")
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([isActive, sortOrder])
-  @@map("promo_banners")
-}
-
 model Chegirma {
   id              String         @id @default(cuid())
   businessName    String         @map("business_name")
   title           String
   description     String         @db.Text
   imageUrl        String         @map("image_url")
+  imageUrls       String[]       @default([]) @map("image_urls")
   discountLabel   String         @map("discount_label")
   category        String         @default("other")
   latitude        Float
@@ -122,6 +107,8 @@ model User {
   coinBalance         Int       @default(0) @map("coin_balance")
   totalCoinsPurchased Int       @default(0) @map("total_coins_purchased")
   totalCoinsSpent     Int       @default(0) @map("total_coins_spent")
+  userWelcomeBonusGranted     Boolean @default(false) @map("user_welcome_bonus_granted")
+  businessWelcomeBonusGranted Boolean @default(false) @map("business_welcome_bonus_granted")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt
 
@@ -193,6 +180,8 @@ model MonetizationSettings {
   vipDurationDays      Int      @default(7) @map("vip_duration_days")
   urgentDurationDays   Int      @default(7) @map("urgent_duration_days")
   chegirmaListingCost Int     @default(2) @map("chegirma_listing_cost")
+  newUserWelcomeBonus Int      @default(0) @map("new_user_welcome_bonus")
+  newBusinessWelcomeBonus Int  @default(0) @map("new_business_welcome_bonus")
   contactTelegram      String?  @map("contact_telegram")
   contactPhone         String?  @map("contact_phone")
   contactWhatsapp      String?  @map("contact_whatsapp")

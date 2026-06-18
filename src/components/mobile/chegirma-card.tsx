@@ -32,7 +32,7 @@ export function ChegirmaCard({
     >
       <Link href={`/chegirmalar/${item.id}`}>
         <article className="overflow-hidden rounded-[20px] bg-white shadow-[0_2px_16px_rgba(15,23,42,0.06)]">
-          <div className="relative h-36 w-full">
+          <div className="relative h-36 w-full bg-[#F1F5F9]">
             <Image
               src={item.imageUrl}
               alt={item.title}
@@ -40,20 +40,21 @@ export function ChegirmaCard({
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 400px"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <span className="absolute left-3 top-3 rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-extrabold text-white shadow">
+          </div>
+
+          <div className="px-3 pt-3">
+            <span className="inline-block rounded-full bg-rose-500 px-2.5 py-1 text-[11px] font-extrabold text-white">
               {item.discountLabel}
             </span>
-            <div className="absolute bottom-3 left-3 right-3">
-              <p className="text-[11px] font-semibold text-white/80">
-                {getChegirmaCategoryEmoji(item.category)}{" "}
-                {item.businessName}
-              </p>
-              <h3 className="mt-0.5 line-clamp-2 text-[15px] font-extrabold leading-snug text-white">
-                {item.title}
-              </h3>
-            </div>
+            <p className="mt-2 text-[12px] font-semibold text-primary">
+              {getChegirmaCategoryEmoji(item.category)} {item.businessName}
+            </p>
+            <h3 className="mt-0.5 line-clamp-2 text-[15px] font-extrabold leading-snug text-[#0F172A]">
+              {item.title}
+            </h3>
+            <p className="sr-only">{getChegirmaCategoryLabel(item.category)}</p>
           </div>
+
           <div className="flex items-center justify-between px-3 py-2.5 text-[11px] text-[#64748B]">
             <span className="flex items-center gap-1">
               <MapPin className="h-3 w-3" />
@@ -64,7 +65,6 @@ export function ChegirmaCard({
               {formatValidUntil(item.validUntil)} gacha
             </span>
           </div>
-          <p className="sr-only">{getChegirmaCategoryLabel(item.category)}</p>
         </article>
       </Link>
     </motion.div>

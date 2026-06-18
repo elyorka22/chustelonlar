@@ -60,16 +60,14 @@ export default function PrivacyPage() {
       </LegalSection>
 
       <LegalSection title="4. Uchinchi tomonlar">
-        <p>Ma'lumotlar quyidagi xizmatlar bilan cheklangan hajmda bo&apos;lishishi mumkin:</p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li><strong>Google OAuth</strong> — Google orqali kirish tanlasangiz;</li>
-          <li><strong>DigitalOcean Spaces</strong> — yuklangan rasmlarni saqlash;</li>
-          <li><strong>Hosting provayderi</strong> — server va ma&apos;lumotlar bazasi;</li>
-          <li><strong>Redis</strong> — kesh va tezlik optimizatsiyasi (mavjud bo&apos;lsa).</li>
-        </ul>
         <p>
-          Uchinchi tomonlar o&apos;z maxfiylik siyosatiga ega. Biz ma&apos;lumotlarni
-          reklama maqsadida sotmaymiz.
+          Platforma ishlashi uchun ma&apos;lumotlaringiz texnik xizmat ko&apos;rsatuvchilar
+          (server, ma&apos;lumotlar bazasi, fayl saqlash) bilan faqat xizmatni ta&apos;minlash
+          uchun zarur bo&apos;lgan hajmda bo&apos;lishishi mumkin.
+        </p>
+        <p>
+          Biz shaxsiy ma&apos;lumotlarni reklama yoki sotish maqsadida uchinchi
+          tomonlarga bermaymiz.
         </p>
       </LegalSection>
 

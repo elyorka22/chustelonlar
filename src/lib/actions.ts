@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/db";
-import { isAdmin, isStaff } from "@/lib/roles";
+import { isAdmin, isBusinessOrAdmin, isStaff } from "@/lib/roles";
 import bcrypt from "bcryptjs";
 import { registerSchema } from "@/lib/validations";
 import { ZodError } from "zod";
@@ -52,13 +52,16 @@ export async function registerUser(formData: FormData) {
 
   const hashedPassword = await bcrypt.hash(parsed.data.password, 12);
 
-  await getPrisma().user.create({
+  const user = await getPrisma().user.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
       password: hashedPassword,
     },
   });
+
+  const { tryGrantUserWelcomeBonus } = await import("@/lib/services/welcome-bonuses");
+  await tryGrantUserWelcomeBonus(user.id);
 
   return { success: true };
 }
@@ -215,6 +218,8 @@ export async function adminUpdateMonetizationSettings(data: {
   contactTelegram?: string;
   contactPhone?: string;
   contactWhatsapp?: string;
+  newUserWelcomeBonus?: number;
+  newBusinessWelcomeBonus?: number;
 }) {
   const session = await auth();
   const denied = adminAccessDenied(session?.user?.role);
@@ -625,6 +630,107 @@ export async function adminRemoveModerator(userId: string) {
   return { success: true };
 }
 
+export async function adminMakeBusiness(userId: string) {
+  const session = await auth();
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
+  }
+
+  const target = await getPrisma().user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (!target) {
+    return { error: "Foydalanuvchi topilmadi" };
+  }
+  if (target.role === "ADMIN" || target.role === "MODERATOR") {
+    return { error: "Ushbu rolni biznes qilib bo'lmaydi" };
+  }
+  if (target.role === "BUSINESS") {
+    return { error: "Foydalanuvchi allaqachon biznes akkaunt" };
+  }
+
+  const { promoteToBusiness } = await import("@/lib/services/ads");
+  await promoteToBusiness(userId);
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function adminRemoveBusiness(userId: string) {
+  const session = await auth();
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
+  }
+
+  const target = await getPrisma().user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (!target) {
+    return { error: "Foydalanuvchi topilmadi" };
+  }
+  if (target.role !== "BUSINESS") {
+    return { error: "Foydalanuvchi biznes emas" };
+  }
+
+  const { demoteFromBusiness } = await import("@/lib/services/ads");
+  await demoteFromBusiness(userId);
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function switchToBusinessAccount() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+  if (session.user.role !== "USER") {
+    return { error: "Faqat oddiy hisobdan biznes akkauntga o'tish mumkin" };
+  }
+
+  const { promoteToBusiness } = await import("@/lib/services/ads");
+  await promoteToBusiness(session.user.id);
+  revalidatePath("/dashboard");
+  revalidatePath("/chegirmalar");
+  return { success: true };
+}
+
+export async function adminDistributeUserWelcomeBonuses() {
+  const session = await auth();
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
+  }
+
+  const { distributePendingUserWelcomeBonuses } = await import(
+    "@/lib/services/welcome-bonuses"
+  );
+  const count = await distributePendingUserWelcomeBonuses();
+  revalidatePath("/admin/monetization");
+  return { success: true, count };
+}
+
+export async function adminDistributeBusinessWelcomeBonuses() {
+  const session = await auth();
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
+  }
+
+  const { distributePendingBusinessWelcomeBonuses } = await import(
+    "@/lib/services/welcome-bonuses"
+  );
+  const count = await distributePendingBusinessWelcomeBonuses();
+  revalidatePath("/admin/monetization");
+  return { success: true, count };
+}
+
 export async function adminResolveReport(reportId: string) {
   const session = await auth();
   const denied = staffAccessDenied(session?.user?.role);
@@ -734,141 +840,6 @@ export async function adminDeleteCategory(slug: string) {
   }
 }
 
-function revalidateBannerPaths() {
-  revalidatePath("/");
-  revalidatePath("/admin/banners");
-}
-
-export async function adminUpdatePromoBannerImage(id: string, imageUrl: string) {
-  const session = await auth();
-  const denied = adminAccessDenied(session?.user?.role);
-  if (!session?.user?.id || denied) {
-    return denied ?? { error: "Ruxsat yo'q" };
-  }
-
-  const { updatePromoBanner } = await import("@/lib/services/promo-banners");
-  const { invalidatePromoBannersCache } = await import("@/lib/cache-invalidate");
-  const { revalidateTag } = await import("next/cache");
-
-  try {
-    await updatePromoBanner(id, { imageUrl });
-    await invalidatePromoBannersCache();
-    revalidateTag("banners", "max");
-    revalidateBannerPaths();
-    return { success: true };
-  } catch {
-    return { error: "Banner topilmadi" };
-  }
-}
-
-export async function adminRemovePromoBannerImage(id: string) {
-  const session = await auth();
-  const denied = adminAccessDenied(session?.user?.role);
-  if (!session?.user?.id || denied) {
-    return denied ?? { error: "Ruxsat yo'q" };
-  }
-
-  const { updatePromoBanner } = await import("@/lib/services/promo-banners");
-  const { invalidatePromoBannersCache } = await import("@/lib/cache-invalidate");
-  const { revalidateTag } = await import("next/cache");
-
-  try {
-    await updatePromoBanner(id, { imageUrl: null });
-    await invalidatePromoBannersCache();
-    revalidateTag("banners", "max");
-    revalidateBannerPaths();
-    return { success: true };
-  } catch {
-    return { error: "Banner topilmadi" };
-  }
-}
-
-export async function adminSavePromoBanner(formData: FormData) {
-  const session = await auth();
-  const denied = adminAccessDenied(session?.user?.role);
-  if (!session?.user?.id || denied) {
-    return denied ?? { error: "Ruxsat yo'q" };
-  }
-
-  const id = (formData.get("id") as string | null)?.trim() || null;
-  const title = (formData.get("title") as string)?.trim();
-  const subtitle = (formData.get("subtitle") as string)?.trim();
-  const href = (formData.get("href") as string)?.trim() || "/ads";
-  const ctaLabel = (formData.get("ctaLabel") as string)?.trim() || "Ko'rish";
-  const bgClass =
-    (formData.get("bgClass") as string)?.trim() || "from-violet-500 to-purple-600";
-  const imageUrl = (formData.get("imageUrl") as string)?.trim() || null;
-  const sortOrder = parseInt((formData.get("sortOrder") as string) || "0", 10);
-  const isActive = formData.get("isActive") === "true";
-
-  const hasText = Boolean(title || subtitle);
-  if (!hasText && !imageUrl) {
-    return { error: "Matnsiz banner uchun rasm yuklang" };
-  }
-
-  const {
-    createPromoBanner,
-    updatePromoBanner,
-  } = await import("@/lib/services/promo-banners");
-  const { invalidatePromoBannersCache } = await import("@/lib/cache-invalidate");
-  const { revalidateTag } = await import("next/cache");
-
-  try {
-    if (id) {
-      await updatePromoBanner(id, {
-        title,
-        subtitle,
-        href,
-        ctaLabel,
-        bgClass,
-        imageUrl,
-        sortOrder: Number.isNaN(sortOrder) ? 0 : sortOrder,
-        isActive,
-      });
-    } else {
-      await createPromoBanner({
-        title,
-        subtitle,
-        href,
-        ctaLabel,
-        bgClass,
-        imageUrl,
-        sortOrder: Number.isNaN(sortOrder) ? undefined : sortOrder,
-        isActive,
-      });
-    }
-
-    await invalidatePromoBannersCache();
-    revalidateTag("banners", "max");
-    revalidateBannerPaths();
-    return { success: true };
-  } catch {
-    return { error: "Banner saqlanmadi" };
-  }
-}
-
-export async function adminDeletePromoBanner(id: string) {
-  const session = await auth();
-  const denied = adminAccessDenied(session?.user?.role);
-  if (!session?.user?.id || denied) {
-    return denied ?? { error: "Ruxsat yo'q" };
-  }
-
-  const { deletePromoBanner } = await import("@/lib/services/promo-banners");
-  const { invalidatePromoBannersCache } = await import("@/lib/cache-invalidate");
-  const { revalidateTag } = await import("next/cache");
-
-  try {
-    await deletePromoBanner(id);
-    await invalidatePromoBannersCache();
-    revalidateTag("banners", "max");
-    revalidateBannerPaths();
-    return { success: true };
-  } catch {
-    return { error: "Banner topilmadi" };
-  }
-}
-
 function revalidateChegirmaPaths() {
   revalidatePath("/chegirmalar");
   revalidatePath("/admin/chegirmalar");
@@ -878,6 +849,9 @@ export async function submitChegirma(input: CreateChegirmaInput) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Avtorizatsiya talab qilinadi" };
+  }
+  if (!isBusinessOrAdmin(session.user.role)) {
+    return { error: "Aksiya joylash uchun biznes akkaunt kerak" };
   }
 
   try {

@@ -3,12 +3,14 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useSession } from "next-auth/react";
 import { Plus, List, Map } from "lucide-react";
 import { MobileHeader } from "@/components/mobile/mobile-header";
 import { FilterChips } from "@/components/mobile/filter-chips";
 import { ChegirmaCard } from "@/components/mobile/chegirma-card";
 import { EmptyState } from "@/components/ads/ad-card";
 import { CHEGIRMA_CATEGORIES } from "@/lib/chegirma-constants";
+import { isBusinessOrAdmin } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import type { ChegirmaData, MapChegirmaMarker } from "@/types";
 
@@ -39,6 +41,13 @@ export function ChegirmalarClient({
   const [mapItems, setMapItems] = useState(initialMapItems);
   const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
+  const canCreateAksiya = session?.user && isBusinessOrAdmin(session.user.role);
+  const createHref = !session?.user
+    ? "/login?callbackUrl=/chegirmalar/create"
+    : canCreateAksiya
+      ? "/chegirmalar/create"
+      : "/dashboard?business=required";
 
   const categoryChips = [
     { label: "Barchasi", value: "" },
@@ -101,11 +110,16 @@ export function ChegirmalarClient({
         </div>
 
         <Link
-          href="/chegirmalar/create"
-          className="flex h-10 items-center gap-1.5 rounded-2xl bg-primary px-4 text-[12px] font-bold text-white shadow-md shadow-primary/25"
+          href={createHref}
+          className={cn(
+            "flex h-10 items-center gap-1.5 rounded-2xl px-4 text-[12px] font-bold text-white shadow-md",
+            canCreateAksiya || !session?.user
+              ? "bg-primary shadow-primary/25"
+              : "bg-amber-500 shadow-amber-500/25"
+          )}
         >
           <Plus className="h-4 w-4" />
-          Aksiya
+          {canCreateAksiya ? "Aksiya" : session?.user ? "Biznes" : "Aksiya"}
         </Link>
       </div>
 

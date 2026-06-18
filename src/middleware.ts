@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth.config";
-import { ADMIN_ONLY_ADMIN_PATHS, isStaff } from "@/lib/roles";
+import { ADMIN_ONLY_ADMIN_PATHS, isBusinessOrAdmin, isStaff } from "@/lib/roles";
 
 const { auth } = NextAuth(authConfig);
 
@@ -35,6 +35,13 @@ export default auth((request) => {
     ADMIN_ONLY_ADMIN_PATHS.some((route) => pathname.startsWith(route))
   ) {
     return NextResponse.redirect(new URL("/admin", request.url));
+  }
+
+  if (
+    pathname.startsWith("/chegirmalar/create") &&
+    !isBusinessOrAdmin(session.user.role)
+  ) {
+    return NextResponse.redirect(new URL("/dashboard?business=required", request.url));
   }
 
   return NextResponse.next();

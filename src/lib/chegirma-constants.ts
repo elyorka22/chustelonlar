@@ -7,6 +7,9 @@ export const CHEGIRMA_CATEGORIES = [
   { value: "other", label: "Boshqa", emoji: "🏷️" },
 ] as const;
 
+export const MAX_CHEGIRMA_IMAGES = 5;
+export const CHEGIRMA_DEFAULT_VALIDITY_DAYS = 30;
+
 export type ChegirmaCategory = (typeof CHEGIRMA_CATEGORIES)[number]["value"];
 
 export function getChegirmaCategoryLabel(value: string): string {

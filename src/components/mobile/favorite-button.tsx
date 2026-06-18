@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
@@ -27,6 +27,10 @@ export function FavoriteButton({
   const [favorited, setFavorited] = useState(initialFavorited);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    setFavorited(initialFavorited);
+  }, [initialFavorited, adId]);
+
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -35,6 +39,8 @@ export function FavoriteButton({
       toast.error("Avval tizimga kiring");
       return;
     }
+
+    if (loading) return;
 
     setLoading(true);
     const result = await toggleAdFavorite(adId);
@@ -52,14 +58,20 @@ export function FavoriteButton({
     }
   };
 
+  const stopBubble = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <button
       type="button"
       onClick={handleClick}
+      onPointerDown={stopBubble}
       disabled={loading}
       aria-label={favorited ? "Saqlanganlardan olib tashlash" : "Saqlash"}
       className={cn(
-        "flex items-center justify-center rounded-full bg-white/90 shadow-sm transition-transform active:scale-95 disabled:opacity-60",
+        "pointer-events-auto flex items-center justify-center rounded-full bg-white/90 shadow-sm transition-transform active:scale-95 disabled:opacity-60",
         className
       )}
     >

@@ -35,6 +35,7 @@ export function AdCardGrid({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: index * 0.05 }}
       whileTap={{ scale: 0.98 }}
+      className="relative"
     >
       <Link href={`/ads/${ad.id}`} prefetch className="block">
         <div className={cn("overflow-hidden rounded-[20px] bg-white card-shadow", getVipCardClass(ad.isVip, ad.vipUntil))}>
@@ -52,12 +53,6 @@ export function AdCardGrid({
                 {category?.emoji && <CategoryEmoji emoji={category.emoji} size={40} />}
               </div>
             )}
-            <FavoriteButton
-              adId={ad.id}
-              initialFavorited={favorited}
-              className="absolute right-2.5 top-2.5 h-8 w-8"
-              onChange={(next) => onFavoriteChange?.(ad.id, next)}
-            />
             <AdPromotionBadges
               isTop={ad.isTop}
               topUntil={ad.topUntil}
@@ -82,6 +77,12 @@ export function AdCardGrid({
           </div>
         </div>
       </Link>
+      <FavoriteButton
+        adId={ad.id}
+        initialFavorited={favorited}
+        className="absolute right-2.5 top-2.5 z-20 h-8 w-8"
+        onChange={(next) => onFavoriteChange?.(ad.id, next)}
+      />
     </motion.div>
   );
 }

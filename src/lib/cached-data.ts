@@ -47,15 +47,6 @@ export const getCachedMapAds = unstable_cache(
   { revalidate: 60, tags: [CACHE_TAGS.ads] }
 );
 
-export const getCachedPromoBanners = unstable_cache(
-  async () => {
-    const { getActivePromoBanners } = await import("@/lib/services/promo-banners");
-    return getActivePromoBanners();
-  },
-  ["cached-promo-banners"],
-  { revalidate: 120, tags: [CACHE_TAGS.banners] }
-);
-
 export const getCachedChegirmalar = unstable_cache(
   async (category = "") => {
     const { getActiveChegirmalar } = await import("@/lib/services/chegirmalar");

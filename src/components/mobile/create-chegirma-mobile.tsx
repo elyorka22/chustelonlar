@@ -2,15 +2,15 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Upload, ImageIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import dynamic from "next/dynamic";
 import { MobileHeader } from "@/components/mobile/mobile-header";
+import { UploadBox } from "@/components/mobile/upload-box";
 import { InsufficientCoinsModal } from "@/components/mobile/insufficient-coins-modal";
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
 import { MAP_CENTER, DISTRICTS } from "@/lib/constants";
-import { CHEGIRMA_CATEGORIES } from "@/lib/chegirma-constants";
+import { CHEGIRMA_CATEGORIES, MAX_CHEGIRMA_IMAGES } from "@/lib/chegirma-constants";
 import { isActionError } from "@/lib/action-result";
 import { submitChegirma, getChegirmaCostPreview } from "@/lib/actions";
 import { toast } from "sonner";
@@ -26,12 +26,18 @@ const STEPS = [
   { id: 2, label: "Do'kon joylashuvi" },
 ];
 
+interface UploadedImage {
+  fullUrl: string;
+  thumbUrl: string;
+}
+
 export function CreateChegirmaMobile({ initialBalance = 0 }: { initialBalance?: number }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [images, setImages] = useState<UploadedImage[]>([]);
   const [location, setLocation] = useState({ lat: MAP_CENTER.lat, lng: MAP_CENTER.lng });
   const [listingCost, setListingCost] = useState<{ required: number; balance: number } | null>(
     null
@@ -44,7 +50,6 @@ export function CreateChegirmaMobile({ initialBalance = 0 }: { initialBalance?: 
 
   const [form, setForm] = useState({
     businessName: "",
-    title: "",
     description: "",
     discountLabel: "",
     category: "food" as (typeof CHEGIRMA_CATEGORIES)[number]["value"],
@@ -52,7 +57,6 @@ export function CreateChegirmaMobile({ initialBalance = 0 }: { initialBalance?: 
     address: "",
     phone: "",
     telegram: "",
-    validUntil: "",
   });
 
   const loadCost = useCallback(async () => {
@@ -66,42 +70,57 @@ export function CreateChegirmaMobile({ initialBalance = 0 }: { initialBalance?: 
     void loadCost();
   }, [loadCost]);
 
-  const handleImageUpload = async (file: File) => {
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error("Max 20MB");
-      return;
-    }
-    setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Xatolik");
-        return;
+  const handleImageUpload = useCallback(async (files: FileList | null) => {
+    if (!files) return;
+
+    for (const file of Array.from(files)) {
+      if (images.length >= MAX_CHEGIRMA_IMAGES) {
+        toast.error(`Maksimum ${MAX_CHEGIRMA_IMAGES} ta rasm`);
+        break;
       }
-      setImageUrl(data.fullUrl);
-      toast.success("Banner yuklandi");
-    } catch {
-      toast.error("Yuklashda xatolik");
-    } finally {
-      setUploading(false);
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error("Max 20MB");
+        continue;
+      }
+
+      setUploading(true);
+      setUploadProgress(0);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const xhr = new XMLHttpRequest();
+        const result = await new Promise<UploadedImage>((resolve, reject) => {
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              setUploadProgress(Math.round((e.loaded / e.total) * 100));
+            }
+          };
+          xhr.onload = () =>
+            xhr.status === 200 ? resolve(JSON.parse(xhr.responseText)) : reject();
+          xhr.onerror = reject;
+          xhr.open("POST", "/api/upload");
+          xhr.send(formData);
+        });
+        setImages((prev) => [...prev, result]);
+      } catch {
+        toast.error("Yuklashda xatolik");
+      } finally {
+        setUploading(false);
+      }
     }
-  };
+  }, [images.length]);
 
   const canProceedStep1 =
     form.businessName &&
-    form.title &&
     form.description &&
     form.discountLabel &&
     form.phone &&
-    form.validUntil &&
-    imageUrl;
+    images.length > 0;
 
   const handleSubmit = async () => {
-    if (!imageUrl) {
-      toast.error("Banner rasmini yuklang");
+    if (images.length === 0) {
+      toast.error("Kamida bitta rasm yuklang");
       setStep(1);
       return;
     }
@@ -109,18 +128,16 @@ export function CreateChegirmaMobile({ initialBalance = 0 }: { initialBalance?: 
     setLoading(true);
     const result = await submitChegirma({
       businessName: form.businessName,
-      title: form.title,
       description: form.description,
       discountLabel: form.discountLabel,
       category: form.category,
-      imageUrl,
+      imageUrls: images.map((img) => img.fullUrl),
       latitude: location.lat,
       longitude: location.lng,
       district: form.district,
       address: form.address || undefined,
       phone: form.phone,
       telegram: form.telegram || undefined,
-      validUntil: new Date(form.validUntil),
     });
     setLoading(false);
 
@@ -185,12 +202,6 @@ export function CreateChegirmaMobile({ initialBalance = 0 }: { initialBalance?: 
                 onChange={(e) => setForm({ ...form, businessName: e.target.value })}
                 className={inputClass}
               />
-              <input
-                placeholder="Aksiya sarlavhasi *"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className={inputClass}
-              />
               <textarea
                 placeholder="Aksiya tavsifi *"
                 value={form.description}
@@ -228,14 +239,6 @@ export function CreateChegirmaMobile({ initialBalance = 0 }: { initialBalance?: 
               </div>
 
               <input
-                type="date"
-                value={form.validUntil}
-                onChange={(e) => setForm({ ...form, validUntil: e.target.value })}
-                className={inputClass}
-                min={new Date().toISOString().split("T")[0]}
-              />
-
-              <input
                 placeholder="Telefon *"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -249,29 +252,19 @@ export function CreateChegirmaMobile({ initialBalance = 0 }: { initialBalance?: 
               />
 
               <div>
-                <p className="mb-2 text-[13px] font-semibold text-gray-700">Banner rasmi *</p>
-                <div className="relative h-40 overflow-hidden rounded-[20px] bg-white ring-1 ring-gray-200">
-                  {imageUrl ? (
-                    <Image src={imageUrl} alt="" fill className="object-cover" sizes="400px" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-gray-300">
-                      <ImageIcon className="h-10 w-10" />
-                    </div>
-                  )}
-                </div>
-                <label className="mt-2 flex h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-primary/10 text-[13px] font-bold text-primary">
-                  <Upload className="h-4 w-4" />
-                  {uploading ? "Yuklanmoqda..." : "Rasm yuklash"}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) void handleImageUpload(file);
-                    }}
-                  />
-                </label>
+                <p className="mb-2 text-[13px] font-semibold text-gray-700">
+                  Rasmlarni yuklang ({MAX_CHEGIRMA_IMAGES} tagacha) *
+                </p>
+                <UploadBox
+                  images={images}
+                  uploading={uploading}
+                  progress={uploadProgress}
+                  onUpload={handleImageUpload}
+                  onRemove={(index) =>
+                    setImages((prev) => prev.filter((_, i) => i !== index))
+                  }
+                  maxImages={MAX_CHEGIRMA_IMAGES}
+                />
               </div>
 
               {listingCost && listingCost.required > 0 && (

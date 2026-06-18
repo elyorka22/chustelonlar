@@ -702,6 +702,25 @@ export async function unbanUser(userId: string) {
   });
 }
 
+export async function promoteToBusiness(userId: string) {
+  const user = await getPrisma().user.update({
+    where: { id: userId },
+    data: { role: "BUSINESS" },
+  });
+
+  const { tryGrantBusinessWelcomeBonus } = await import("@/lib/services/welcome-bonuses");
+  await tryGrantBusinessWelcomeBonus(userId);
+
+  return user;
+}
+
+export async function demoteFromBusiness(userId: string) {
+  return getPrisma().user.update({
+    where: { id: userId },
+    data: { role: "USER" },
+  });
+}
+
 export async function promoteToAdmin(userId: string) {
   return getPrisma().user.update({
     where: { id: userId },

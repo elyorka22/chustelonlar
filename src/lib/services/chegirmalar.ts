@@ -1,6 +1,7 @@
 import { getPrisma } from "@/lib/db";
 import { sanitizeText, sanitizePhone, sanitizeTelegram } from "@/lib/sanitize";
 import { createChegirmaSchema, type CreateChegirmaInput } from "@/lib/validations";
+import { CHEGIRMA_DEFAULT_VALIDITY_DAYS } from "@/lib/chegirma-constants";
 import type { ChegirmaData, MapChegirmaMarker } from "@/types";
 import type { ChegirmaStatus } from "@prisma/client";
 
@@ -14,6 +15,7 @@ function toChegirmaData(chegirma: {
   title: string;
   description: string;
   imageUrl: string;
+  imageUrls?: string[];
   discountLabel: string;
   category: string;
   latitude: number;
@@ -28,12 +30,18 @@ function toChegirmaData(chegirma: {
   createdAt: Date;
   createdBy?: { id: string; name: string | null };
 }): ChegirmaData {
+  const imageUrls =
+    chegirma.imageUrls && chegirma.imageUrls.length > 0
+      ? chegirma.imageUrls
+      : [chegirma.imageUrl];
+
   return {
     id: chegirma.id,
     businessName: chegirma.businessName,
     title: chegirma.title,
     description: chegirma.description,
-    imageUrl: chegirma.imageUrl,
+    imageUrl: imageUrls[0],
+    imageUrls,
     discountLabel: chegirma.discountLabel,
     category: chegirma.category,
     latitude: chegirma.latitude,
@@ -160,18 +168,21 @@ export async function createChegirma(userId: string, input: CreateChegirmaInput)
   const chegirma = await getPrisma().chegirma.create({
     data: {
       businessName: sanitizeText(data.businessName),
-      title: sanitizeText(data.title),
+      title: sanitizeText(`${data.businessName} — ${data.discountLabel}`),
       description: sanitizeText(data.description),
       discountLabel: sanitizeText(data.discountLabel),
       category: data.category,
-      imageUrl: data.imageUrl,
+      imageUrl: data.imageUrls[0],
+      imageUrls: data.imageUrls,
       latitude: data.latitude,
       longitude: data.longitude,
       district: sanitizeText(data.district),
       address: data.address ? sanitizeText(data.address) : null,
       phone: sanitizePhone(data.phone),
       telegram: data.telegram ? sanitizeTelegram(data.telegram) : null,
-      validUntil: data.validUntil,
+      validUntil: new Date(
+        Date.now() + CHEGIRMA_DEFAULT_VALIDITY_DAYS * 24 * 60 * 60 * 1000
+      ),
       status: "PENDING",
       listingCoinCost: cost,
       createdById: userId,

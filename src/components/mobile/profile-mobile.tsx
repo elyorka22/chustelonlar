@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Settings,
   Shield,
+  Store,
   Eye,
   FileText,
   CheckCircle2,
@@ -25,6 +27,8 @@ import { motion } from "framer-motion";
 import { formatPrice, formatRelativeDate, cn } from "@/lib/utils";
 import { AD_STATUS_LABELS, AD_STATUS_STYLES } from "@/lib/constants";
 import { toast } from "sonner";
+import { isActionError } from "@/lib/action-result";
+import { switchToBusinessAccount } from "@/lib/actions";
 import { ProfileSettings } from "@/components/mobile/profile-settings";
 import { MonetkaWalletCard, CoinHistoryTable } from "@/components/mobile/monetka-wallet";
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
@@ -51,6 +55,7 @@ interface ProfileMobileProps {
     phone: string | null;
     whatsapp: string | null;
   };
+  businessRequired?: boolean;
 }
 
 const TABS = [
@@ -77,6 +82,7 @@ export function ProfileMobile({
   dashboardStats,
   coinValueUzs,
   contact,
+  businessRequired = false,
 }: ProfileMobileProps) {
   const stats = {
     total: dashboardStats.listings.total,
@@ -89,6 +95,26 @@ export function ProfileMobile({
   const [displayName, setDisplayName] = useState(user.name || "");
   const [savedAds, setSavedAds] = useState(favorites);
   const [topUpOpen, setTopUpOpen] = useState(false);
+  const [upgradingBusiness, setUpgradingBusiness] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (businessRequired && user.role === "USER") {
+      toast.info("Aksiya yaratish uchun biznes akkauntga o'ting");
+    }
+  }, [businessRequired, user.role]);
+
+  const handleBecomeBusiness = async () => {
+    setUpgradingBusiness(true);
+    const result = await switchToBusinessAccount();
+    setUpgradingBusiness(false);
+    if (isActionError(result)) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Biznes akkaunt faollashtirildi! Endi aksiyalar yaratishingiz mumkin.");
+    router.refresh();
+  };
 
   const initials = (displayName || user.name || user.email)?.[0]?.toUpperCase() || "?";
 
@@ -158,6 +184,11 @@ export function ProfileMobile({
                     {user.role === "MODERATOR" && (
                       <span className="rounded-md bg-[#8B5CF6] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide">
                         Moderator
+                      </span>
+                    )}
+                    {user.role === "BUSINESS" && (
+                      <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#0F172A]">
+                        Biznes
                       </span>
                     )}
                   </div>
@@ -247,6 +278,24 @@ export function ProfileMobile({
               <ChevronRight className="h-4 w-4 text-white/60" />
             </motion.div>
           </Link>
+        )}
+
+        {user.role === "USER" && (
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.98 }}
+            disabled={upgradingBusiness}
+            onClick={handleBecomeBusiness}
+            className="mt-3 flex h-[48px] w-full items-center justify-between rounded-[16px] bg-amber-500 px-4 text-[#0F172A] disabled:opacity-60"
+          >
+            <div className="flex items-center gap-2.5">
+              <Store className="h-4 w-4" />
+              <span className="text-[14px] font-bold">
+                {upgradingBusiness ? "Faollashtirilmoqda..." : "Biznes akkauntga o'tish"}
+              </span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-[#0F172A]/60" />
+          </motion.button>
         )}
       </div>
 

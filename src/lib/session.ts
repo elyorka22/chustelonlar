@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/db";
-import { isStaff } from "@/lib/roles";
+import { isBusinessOrAdmin, isStaff } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
 import { redirect } from "next/navigation";
 
@@ -67,6 +67,14 @@ export async function requireAdmin() {
   const user = await requireAuth();
   if (user.role !== "ADMIN") {
     redirect("/");
+  }
+  return user;
+}
+
+export async function requireBusiness() {
+  const user = await requireAuth();
+  if (!isBusinessOrAdmin(user.role)) {
+    redirect("/dashboard?business=required");
   }
   return user;
 }

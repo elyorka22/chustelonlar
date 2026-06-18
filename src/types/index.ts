@@ -90,24 +90,13 @@ export interface CategoryData {
   freeLimit?: number;
 }
 
-export interface PromoBannerData {
-  id: string;
-  title: string;
-  subtitle: string;
-  href: string;
-  ctaLabel: string;
-  imageUrl: string | null;
-  bgClass: string;
-  sortOrder: number;
-  isActive: boolean;
-}
-
 export interface ChegirmaData {
   id: string;
   businessName: string;
   title: string;
   description: string;
   imageUrl: string;
+  imageUrls: string[];
   discountLabel: string;
   category: string;
   latitude: number;
