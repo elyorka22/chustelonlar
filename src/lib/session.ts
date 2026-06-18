@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/db";
+import { isStaff } from "@/lib/roles";
 import type { UserRole } from "@prisma/client";
 import { redirect } from "next/navigation";
 
@@ -50,6 +51,14 @@ export async function requireAuth() {
   }
   if (user.role === "BANNED") {
     redirect("/login?error=banned");
+  }
+  return user;
+}
+
+export async function requireStaff() {
+  const user = await requireAuth();
+  if (!isStaff(user.role)) {
+    redirect("/");
   }
   return user;
 }

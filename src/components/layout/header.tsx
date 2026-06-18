@@ -82,11 +82,11 @@ export function Header() {
                   Kabinet
                 </Link>
               </Button>
-              {session.user.role === "ADMIN" && (
+              {(session.user.role === "ADMIN" || session.user.role === "MODERATOR") && (
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/admin">
                     <Shield className="h-4 w-4" />
-                    Admin
+                    {session.user.role === "ADMIN" ? "Admin" : "Moderator"}
                   </Link>
                 </Button>
               )}

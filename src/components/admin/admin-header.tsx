@@ -22,18 +22,19 @@ import {
   Percent,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAdminStaff } from "./admin-staff-context";
 
-const menuItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/ads", label: "E'lonlar", icon: FileText },
-  { href: "/admin/categories", label: "Kategoriyalar", icon: Tags },
-  { href: "/admin/banners", label: "Bannerlar", icon: Image },
-  { href: "/admin/chegirmalar", label: "Chegirmalar", icon: Percent },
-  { href: "/admin/monetization", label: "Monetka", icon: Coins },
-  { href: "/admin/users", label: "Foydalanuvchilar", icon: Users },
-  { href: "/admin/analytics", label: "Statistika", icon: BarChart3 },
-  { href: "/admin/reports", label: "Xabarlar", icon: MessageSquareWarning },
-  { href: "/admin/settings", label: "Sozlamalar", icon: Settings },
+const allMenuItems = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
+  { href: "/admin/ads", label: "E'lonlar", icon: FileText, adminOnly: false },
+  { href: "/admin/categories", label: "Kategoriyalar", icon: Tags, adminOnly: true },
+  { href: "/admin/banners", label: "Bannerlar", icon: Image, adminOnly: true },
+  { href: "/admin/chegirmalar", label: "Chegirmalar", icon: Percent, adminOnly: false },
+  { href: "/admin/monetization", label: "Monetka", icon: Coins, adminOnly: true },
+  { href: "/admin/users", label: "Foydalanuvchilar", icon: Users, adminOnly: true },
+  { href: "/admin/analytics", label: "Statistika", icon: BarChart3, adminOnly: true },
+  { href: "/admin/reports", label: "Xabarlar", icon: MessageSquareWarning, adminOnly: false },
+  { href: "/admin/settings", label: "Sozlamalar", icon: Settings, adminOnly: true },
 ];
 
 interface AdminHeaderProps {
@@ -43,6 +44,8 @@ interface AdminHeaderProps {
 export function AdminHeader({ notificationCount = 0 }: AdminHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { isAdmin } = useAdminStaff();
+  const menuItems = allMenuItems.filter((item) => isAdmin || !item.adminOnly);
 
   return (
     <>
@@ -108,7 +111,9 @@ export function AdminHeader({ notificationCount = 0 }: AdminHeaderProps) {
             >
               <div className="flex items-center justify-between border-b border-[#F1F5F9] px-4 py-4">
                 <div>
-                  <p className="text-xs font-medium text-[#64748B]">Admin panel</p>
+                  <p className="text-xs font-medium text-[#64748B]">
+                    {isAdmin ? "Admin panel" : "Moderator panel"}
+                  </p>
                   <p className="text-lg font-extrabold text-[#0F172A]">Chust E&apos;lon</p>
                 </div>
                 <button

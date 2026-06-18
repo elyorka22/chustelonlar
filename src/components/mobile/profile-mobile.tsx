@@ -155,6 +155,11 @@ export function ProfileMobile({
                         Admin
                       </span>
                     )}
+                    {user.role === "MODERATOR" && (
+                      <span className="rounded-md bg-[#8B5CF6] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide">
+                        Moderator
+                      </span>
+                    )}
                   </div>
                   <p className="mt-0.5 truncate text-[13px] text-white/80">{user.email}</p>
                   <p className="mt-0.5 text-[11px] font-medium text-white/60">
@@ -227,7 +232,7 @@ export function ProfileMobile({
           })}
         </div>
 
-        {user.role === "ADMIN" && (
+        {(user.role === "ADMIN" || user.role === "MODERATOR") && (
           <Link href="/admin" className="mt-3 block">
             <motion.div
               whileTap={{ scale: 0.98 }}
@@ -235,7 +240,9 @@ export function ProfileMobile({
             >
               <div className="flex items-center gap-2.5">
                 <Shield className="h-4 w-4" />
-                <span className="text-[14px] font-bold">Admin panel</span>
+                <span className="text-[14px] font-bold">
+                  {user.role === "ADMIN" ? "Admin panel" : "Moderator panel"}
+                </span>
               </div>
               <ChevronRight className="h-4 w-4 text-white/60" />
             </motion.div>

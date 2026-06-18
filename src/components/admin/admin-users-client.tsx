@@ -10,6 +10,8 @@ import {
   adminBanUser,
   adminUnbanUser,
   adminMakeAdmin,
+  adminMakeModerator,
+  adminRemoveModerator,
 } from "@/lib/actions";
 import { toast } from "sonner";
 
@@ -42,6 +44,7 @@ export function AdminUsersClient({
       if (tab === "active" && user.role !== "USER") return false;
       if (tab === "banned" && user.role !== "BANNED") return false;
       if (tab === "admin" && user.role !== "ADMIN") return false;
+      if (tab === "moderator" && user.role !== "MODERATOR") return false;
       if (search) {
         const q = search.toLowerCase();
         return (
@@ -90,6 +93,7 @@ export function AdminUsersClient({
             <TabsTrigger value="active" className="text-xs">Faol</TabsTrigger>
             <TabsTrigger value="banned" className="text-xs">Ban</TabsTrigger>
             <TabsTrigger value="admin" className="text-xs">Admin</TabsTrigger>
+            <TabsTrigger value="moderator" className="text-xs">Moderator</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -129,6 +133,12 @@ export function AdminUsersClient({
                 }
                 onMakeAdmin={(id) =>
                   runAction(id, () => adminMakeAdmin(id), "Admin qilindi")
+                }
+                onMakeModerator={(id) =>
+                  runAction(id, () => adminMakeModerator(id), "Moderator qilindi")
+                }
+                onRemoveModerator={(id) =>
+                  runAction(id, () => adminRemoveModerator(id), "Moderatorlik olib tashlandi")
                 }
                 index={i}
               />

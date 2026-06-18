@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth.config";
+import { ADMIN_ONLY_ADMIN_PATHS, isStaff } from "@/lib/roles";
 
 const { auth } = NextAuth(authConfig);
 
@@ -24,8 +25,16 @@ export default auth((request) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAdmin && session.user.role !== "ADMIN") {
+  if (isAdmin && !isStaff(session.user.role)) {
     return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  if (
+    isAdmin &&
+    session.user.role === "MODERATOR" &&
+    ADMIN_ONLY_ADMIN_PATHS.some((route) => pathname.startsWith(route))
+  ) {
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   return NextResponse.next();

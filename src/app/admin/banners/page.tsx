@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/session";
 import { getAnalytics, getReports } from "@/lib/services/ads";
 import { getAllPromoBanners } from "@/lib/services/promo-banners";
 import { AdminBannersClient } from "@/components/admin/admin-banners-client";
@@ -11,6 +12,8 @@ export const metadata = {
 };
 
 export default async function AdminBannersPage() {
+  await requireAdmin();
+
   const [banners, analytics, reports] = await Promise.all([
     getAllPromoBanners(),
     getAnalytics(),

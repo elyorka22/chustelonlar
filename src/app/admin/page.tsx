@@ -1,12 +1,13 @@
-import { requireAdmin } from "@/lib/session";
+import { requireStaff } from "@/lib/session";
 import { getAnalytics, getPendingAds, getReports } from "@/lib/services/ads";
 import { AdminDashboardClient } from "@/components/admin/admin-dashboard-client";
+import { isAdmin } from "@/lib/roles";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 export default async function AdminDashboardPage() {
-  const admin = await requireAdmin();
+  const user = await requireStaff();
 
   const [analytics, pendingAds, reports] = await Promise.all([
     getAnalytics(),
@@ -19,8 +20,9 @@ export default async function AdminDashboardPage() {
   return (
     <AdminDashboardClient
       analytics={analytics}
-      adminName={admin.name || "Admin"}
+      staffName={user.name || (isAdmin(user.role) ? "Admin" : "Moderator")}
       notificationCount={notificationCount}
+      isAdmin={isAdmin(user.role)}
     />
   );
 }

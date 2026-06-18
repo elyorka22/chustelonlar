@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/db";
+import { isAdmin, isStaff } from "@/lib/roles";
 import bcrypt from "bcryptjs";
 import { registerSchema } from "@/lib/validations";
 import { ZodError } from "zod";
@@ -14,6 +15,20 @@ import {
 } from "@/lib/services/ads";
 import type { CreateAdInput, CreateChegirmaInput } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
+
+function staffAccessDenied(role: string | undefined) {
+  if (!isStaff(role)) {
+    return { error: "Ruxsat yo'q" };
+  }
+  return null;
+}
+
+function adminAccessDenied(role: string | undefined) {
+  if (!isAdmin(role)) {
+    return { error: "Ruxsat yo'q" };
+  }
+  return null;
+}
 
 export async function registerUser(formData: FormData) {
   const raw = {
@@ -202,8 +217,9 @@ export async function adminUpdateMonetizationSettings(data: {
   contactWhatsapp?: string;
 }) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { updateMonetizationSettings } = await import("@/lib/services/monetization");
@@ -219,8 +235,9 @@ export async function adminAdjustCoins(
   description?: string
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { adminAdjustUserCoins } = await import("@/lib/services/coins");
@@ -236,8 +253,9 @@ export async function adminAdjustCoins(
 
 export async function adminSearchUsers(query: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { searchUsersForAdmin } = await import("@/lib/services/coins");
@@ -254,8 +272,9 @@ export async function adminUpdateCategoryPricing(
   }
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { updateCategoryPricing } = await import("@/lib/services/categories");
@@ -436,8 +455,9 @@ export async function moderateAd(
   action: "approve" | "reject"
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = staffAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const ad = await getPrisma().ad.findUnique({
@@ -474,8 +494,9 @@ export async function moderateAd(
 
 export async function adminDeleteAd(adId: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = staffAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   await updateAdStatus(adId, "DELETED");
@@ -489,8 +510,20 @@ export async function adminDeleteAd(adId: string) {
 
 export async function adminBanUser(userId: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
+  }
+
+  const target = await getPrisma().user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (!target) {
+    return { error: "Foydalanuvchi topilmadi" };
+  }
+  if (target.role === "ADMIN" || target.role === "MODERATOR") {
+    return { error: "Xodimlarni bloklab bo'lmaydi" };
   }
 
   const { banUser } = await import("@/lib/services/ads");
@@ -502,8 +535,9 @@ export async function adminBanUser(userId: string) {
 
 export async function adminUnbanUser(userId: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { unbanUser } = await import("@/lib/services/ads");
@@ -515,8 +549,20 @@ export async function adminUnbanUser(userId: string) {
 
 export async function adminMakeAdmin(userId: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
+  }
+
+  const target = await getPrisma().user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (!target) {
+    return { error: "Foydalanuvchi topilmadi" };
+  }
+  if (target.role === "ADMIN") {
+    return { error: "Foydalanuvchi allaqachon admin" };
   }
 
   const { promoteToAdmin } = await import("@/lib/services/ads");
@@ -526,10 +572,64 @@ export async function adminMakeAdmin(userId: string) {
   return { success: true };
 }
 
+export async function adminMakeModerator(userId: string) {
+  const session = await auth();
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
+  }
+
+  const target = await getPrisma().user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (!target) {
+    return { error: "Foydalanuvchi topilmadi" };
+  }
+  if (target.role === "ADMIN") {
+    return { error: "Adminni moderator qilib bo'lmaydi" };
+  }
+  if (target.role === "MODERATOR") {
+    return { error: "Foydalanuvchi allaqachon moderator" };
+  }
+
+  const { promoteToModerator } = await import("@/lib/services/ads");
+  await promoteToModerator(userId);
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function adminRemoveModerator(userId: string) {
+  const session = await auth();
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
+  }
+
+  const target = await getPrisma().user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (!target) {
+    return { error: "Foydalanuvchi topilmadi" };
+  }
+  if (target.role !== "MODERATOR") {
+    return { error: "Foydalanuvchi moderator emas" };
+  }
+
+  const { demoteToUser } = await import("@/lib/services/ads");
+  await demoteToUser(userId);
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
 export async function adminResolveReport(reportId: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = staffAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   await getPrisma().report.delete({ where: { id: reportId } });
@@ -543,8 +643,9 @@ export async function adminUpdateCategoryImage(
   imageUrl: string
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { upsertCategoryImage } = await import("@/lib/services/categories");
@@ -561,8 +662,9 @@ export async function adminUpdateCategoryImage(
 
 export async function adminRemoveCategoryImage(slug: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { removeCategoryImage } = await import("@/lib/services/categories");
@@ -579,8 +681,9 @@ export async function adminRemoveCategoryImage(slug: string) {
 
 export async function adminCreateCategory(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const label = (formData.get("label") as string)?.trim();
@@ -612,8 +715,9 @@ export async function adminCreateCategory(formData: FormData) {
 
 export async function adminDeleteCategory(slug: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { deactivateCategory } = await import("@/lib/services/categories");
@@ -637,8 +741,9 @@ function revalidateBannerPaths() {
 
 export async function adminUpdatePromoBannerImage(id: string, imageUrl: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { updatePromoBanner } = await import("@/lib/services/promo-banners");
@@ -658,8 +763,9 @@ export async function adminUpdatePromoBannerImage(id: string, imageUrl: string) 
 
 export async function adminRemovePromoBannerImage(id: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { updatePromoBanner } = await import("@/lib/services/promo-banners");
@@ -679,8 +785,9 @@ export async function adminRemovePromoBannerImage(id: string) {
 
 export async function adminSavePromoBanner(formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const id = (formData.get("id") as string | null)?.trim() || null;
@@ -742,8 +849,9 @@ export async function adminSavePromoBanner(formData: FormData) {
 
 export async function adminDeletePromoBanner(id: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = adminAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { deletePromoBanner } = await import("@/lib/services/promo-banners");
@@ -831,8 +939,9 @@ export async function moderateChegirma(
   action: "approve" | "reject"
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = staffAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const item = await getPrisma().chegirma.findUnique({
@@ -873,8 +982,9 @@ export async function moderateChegirma(
 
 export async function adminDeleteChegirma(id: string) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
-    return { error: "Ruxsat yo'q" };
+  const denied = staffAccessDenied(session?.user?.role);
+  if (!session?.user?.id || denied) {
+    return denied ?? { error: "Ruxsat yo'q" };
   }
 
   const { deleteChegirma, afterChegirmaMutation } = await import(

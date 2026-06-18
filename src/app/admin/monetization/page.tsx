@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/session";
 import { getMonetizationSettings } from "@/lib/services/monetization";
 import { getAllCategories } from "@/lib/services/categories";
 import { getAnalytics, getReports } from "@/lib/services/ads";
@@ -12,6 +13,8 @@ export const metadata = {
 };
 
 export default async function AdminMonetizationPage() {
+  await requireAdmin();
+
   const [settings, categories, analytics, reports] = await Promise.all([
     getMonetizationSettings(),
     getAllCategories(),

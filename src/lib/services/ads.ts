@@ -709,6 +709,20 @@ export async function promoteToAdmin(userId: string) {
   });
 }
 
+export async function promoteToModerator(userId: string) {
+  return getPrisma().user.update({
+    where: { id: userId },
+    data: { role: "MODERATOR" },
+  });
+}
+
+export async function demoteToUser(userId: string) {
+  return getPrisma().user.update({
+    where: { id: userId },
+    data: { role: "USER" },
+  });
+}
+
 export async function getAllUsers() {
   return getPrisma().user.findMany({
     select: {

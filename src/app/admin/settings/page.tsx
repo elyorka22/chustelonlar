@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/session";
 import { getAnalytics, getReports } from "@/lib/services/ads";
 import { AdminSettingsClient } from "@/components/admin/admin-settings-client";
 export const dynamic = "force-dynamic";
@@ -9,6 +10,8 @@ export const metadata = {
 };
 
 export default async function AdminSettingsPage() {
+  await requireAdmin();
+
   const [analytics, reports] = await Promise.all([
     getAnalytics(),
     getReports(),

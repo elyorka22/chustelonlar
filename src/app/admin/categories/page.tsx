@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/session";
 import { getAnalytics, getReports } from "@/lib/services/ads";
 import { getAllCategories } from "@/lib/services/categories";
 import { AdminCategoriesClient } from "@/components/admin/admin-categories-client";
@@ -10,6 +11,8 @@ export const metadata = {
 };
 
 export default async function AdminCategoriesPage() {
+  await requireAdmin();
+
   const [categories, analytics, reports] = await Promise.all([
     getAllCategories(),
     getAnalytics(),
