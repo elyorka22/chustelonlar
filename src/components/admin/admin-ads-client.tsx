@@ -1,15 +1,13 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { ModerationCard } from "./moderation-card";
 import { FilterChips } from "@/components/mobile/filter-chips";
-import { isActionError } from "@/lib/action-result";
 import { moderateAd } from "@/lib/actions";
-import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useAsyncAction } from "@/lib/use-async-action";
 import type { CategoryData } from "@/types";
 
 interface PendingAd {
@@ -41,8 +39,7 @@ export function AdminAdsClient({
   ];
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const { run, isLoading } = useAsyncAction();
 
   const filtered = useMemo(() => {
     return pendingAds.filter((ad) => {
@@ -59,17 +56,14 @@ export function AdminAdsClient({
   }, [pendingAds, category, search]);
 
   const handleModerate = (adId: string, action: "approve" | "reject") => {
-    setLoadingId(adId);
-    startTransition(async () => {
-      const result = await moderateAd(adId, action);
-      setLoadingId(null);
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
+    run(
+      `ad-${adId}`,
+      () => moderateAd(adId, action),
+      {
+        successMessage: action === "approve" ? "Tasdiqlandi ✓" : "Rad etildi",
+        reload: true,
       }
-      toast.success(action === "approve" ? "Tasdiqlandi ✓" : "Rad etildi");
-      window.location.reload();
-    });
+    );
   };
 
   return (
@@ -93,38 +87,26 @@ export function AdminAdsClient({
           <FilterChips chips={categoryChips} active={category} onChange={setCategory} />
         </div>
 
-        <div className="mt-3 flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
-            <input
-              type="search"
-              placeholder="Qidirish..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-11 w-full rounded-2xl border-0 bg-white pl-10 pr-4 text-sm shadow-sm outline-none ring-1 ring-[#E2E8F0] focus:ring-2 focus:ring-primary/30"
-            />
-          </div>
-          <button
-            type="button"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-[#E2E8F0]"
-          >
-            <SlidersHorizontal className="h-4 w-4 text-[#64748B]" />
-          </button>
+        <div className="relative mt-3">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+          <input
+            type="search"
+            placeholder="Qidirish..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-11 w-full rounded-2xl border-0 bg-white pl-10 pr-4 text-sm shadow-sm outline-none ring-1 ring-[#E2E8F0] focus:ring-2 focus:ring-primary/30"
+          />
         </div>
 
         <div className="mt-4 space-y-3">
-          {isPending && !loadingId ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-40 w-full rounded-[20px]" />
-            ))
-          ) : filtered.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="rounded-[20px] bg-white py-16 text-center shadow-sm">
               <p className="text-4xl">✅</p>
               <p className="mt-2 font-semibold text-[#0F172A]">Hammasi tayyor!</p>
               <p className="text-sm text-[#64748B]">Kutilayotgan e&apos;lonlar yo&apos;q</p>
             </div>
           ) : (
-            filtered.map((ad, i) => (
+            filtered.map((ad) => (
               <ModerationCard
                 key={ad.id}
                 id={ad.id}
@@ -138,9 +120,8 @@ export function AdminAdsClient({
                 thumbUrl={ad.images[0]?.thumbUrl}
                 onApprove={(id) => handleModerate(id, "approve")}
                 onReject={(id) => handleModerate(id, "reject")}
-                loading={loadingId === ad.id}
+                loading={isLoading(`ad-${ad.id}`)}
                 categories={categories}
-                index={i}
               />
             ))
           )}

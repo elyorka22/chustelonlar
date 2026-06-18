@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Check, X, Eye, MapPin, Clock } from "lucide-react";
 import { formatPrice, formatRelativeDate } from "@/lib/utils";
 import type { CategoryData } from "@/types";
 import { findCategory } from "@/lib/category-helpers";
 import { CategoryEmoji } from "@/components/ui/category-emoji";
+import { cn } from "@/lib/utils";
 
 interface ModerationCardProps {
   id: string;
@@ -25,6 +25,9 @@ interface ModerationCardProps {
   index?: number;
 }
 
+const actionBtn =
+  "flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-sm font-bold touch-manipulation active:scale-[0.97] transition-transform disabled:pointer-events-none disabled:opacity-50";
+
 export function ModerationCard({
   id,
   title,
@@ -39,17 +42,11 @@ export function ModerationCard({
   onReject,
   loading = false,
   categories = [],
-  index = 0,
 }: ModerationCardProps) {
   const cat = findCategory(categories, category);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: index * 0.04 }}
-      className="overflow-hidden rounded-[20px] bg-white shadow-[0_2px_16px_rgba(15,23,42,0.06)]"
-    >
+    <div className="overflow-hidden rounded-[20px] bg-white shadow-[0_2px_16px_rgba(15,23,42,0.06)]">
       <div className="flex gap-3 p-4">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-[#F1F5F9]">
           {thumbUrl ? (
@@ -77,36 +74,32 @@ export function ModerationCard({
       </div>
 
       <div className="grid grid-cols-3 gap-2 border-t border-[#F1F5F9] p-3">
-        <motion.button
+        <button
           type="button"
-          whileTap={{ scale: 0.95 }}
           disabled={loading}
           onClick={() => onApprove(id)}
-          className="flex h-12 items-center justify-center gap-1.5 rounded-2xl bg-[#22C55E]/10 text-sm font-bold text-[#22C55E] disabled:opacity-50"
+          className={cn(actionBtn, "bg-[#22C55E]/10 text-[#22C55E]")}
         >
           <Check className="h-5 w-5" />
           Tasdiq
-        </motion.button>
-        <motion.button
+        </button>
+        <button
           type="button"
-          whileTap={{ scale: 0.95 }}
           disabled={loading}
           onClick={() => onReject(id)}
-          className="flex h-12 items-center justify-center gap-1.5 rounded-2xl bg-[#EF4444]/10 text-sm font-bold text-[#EF4444] disabled:opacity-50"
+          className={cn(actionBtn, "bg-[#EF4444]/10 text-[#EF4444]")}
         >
           <X className="h-5 w-5" />
           Rad
-        </motion.button>
-        <Link href={`/ads/${id}`}>
-          <motion.div
-            whileTap={{ scale: 0.95 }}
-            className="flex h-12 items-center justify-center gap-1.5 rounded-2xl bg-[#F1F5F9] text-sm font-bold text-[#64748B]"
-          >
-            <Eye className="h-5 w-5" />
-            Ko&apos;rish
-          </motion.div>
+        </button>
+        <Link
+          href={`/ads/${id}`}
+          className={cn(actionBtn, "bg-[#F1F5F9] text-[#64748B]")}
+        >
+          <Eye className="h-5 w-5" />
+          Ko&apos;rish
         </Link>
       </div>
-    </motion.div>
+    </div>
   );
 }

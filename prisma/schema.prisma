@@ -109,6 +109,8 @@ model User {
   totalCoinsSpent     Int       @default(0) @map("total_coins_spent")
   userWelcomeBonusGranted     Boolean @default(false) @map("user_welcome_bonus_granted")
   businessWelcomeBonusGranted Boolean @default(false) @map("business_welcome_bonus_granted")
+  userWelcomeCelebrationShown     Boolean @default(false) @map("user_welcome_celebration_shown")
+  businessWelcomeCelebrationShown Boolean @default(false) @map("business_welcome_celebration_shown")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt
 

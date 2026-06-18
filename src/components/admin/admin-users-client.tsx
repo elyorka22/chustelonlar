@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { UserCard } from "./user-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isActionError } from "@/lib/action-result";
 import {
   adminBanUser,
   adminUnbanUser,
@@ -16,7 +15,7 @@ import {
   adminMakeBusiness,
   adminRemoveBusiness,
 } from "@/lib/actions";
-import { toast } from "sonner";
+import { useAsyncAction } from "@/lib/use-async-action";
 
 interface AdminUser {
   id: string;
@@ -39,8 +38,7 @@ export function AdminUsersClient({
 }: AdminUsersClientProps) {
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+  const { run, isLoading } = useAsyncAction();
 
   const filtered = useMemo(() => {
     return users.filter((user) => {
@@ -60,22 +58,12 @@ export function AdminUsersClient({
     });
   }, [users, tab, search]);
 
-  const runAction = (
+  const runUserAction = (
     userId: string,
     action: () => Promise<{ error?: string; success?: boolean }>,
     successMsg: string
   ) => {
-    setLoadingId(userId);
-    startTransition(async () => {
-      const result = await action();
-      setLoadingId(null);
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(successMsg);
-      window.location.reload();
-    });
+    run(`user-${userId}`, action, { successMessage: successMsg, reload: true });
   };
 
   return (
@@ -92,7 +80,7 @@ export function AdminUsersClient({
         <p className="mt-0.5 text-sm text-[#64748B]">{users.length} ta foydalanuvchi</p>
 
         <Tabs value={tab} onValueChange={setTab} className="mt-4">
-          <TabsList className="w-full">
+          <TabsList>
             <TabsTrigger value="all" className="text-xs">Barchasi</TabsTrigger>
             <TabsTrigger value="active" className="text-xs">Faol</TabsTrigger>
             <TabsTrigger value="banned" className="text-xs">Ban</TabsTrigger>
@@ -119,7 +107,7 @@ export function AdminUsersClient({
               Foydalanuvchilar topilmadi
             </div>
           ) : (
-            filtered.map((user, i) => (
+            filtered.map((user) => (
               <UserCard
                 key={user.id}
                 id={user.id}
@@ -129,29 +117,28 @@ export function AdminUsersClient({
                 role={user.role}
                 adsCount={user._count.ads}
                 createdAt={user.createdAt}
-                loading={loadingId === user.id}
+                loading={isLoading(`user-${user.id}`)}
                 onBan={(id) =>
-                  runAction(id, () => adminBanUser(id), "Foydalanuvchi bloklandi")
+                  runUserAction(id, () => adminBanUser(id), "Foydalanuvchi bloklandi")
                 }
                 onUnban={(id) =>
-                  runAction(id, () => adminUnbanUser(id), "Blokdan chiqarildi")
+                  runUserAction(id, () => adminUnbanUser(id), "Blokdan chiqarildi")
                 }
                 onMakeAdmin={(id) =>
-                  runAction(id, () => adminMakeAdmin(id), "Admin qilindi")
+                  runUserAction(id, () => adminMakeAdmin(id), "Admin qilindi")
                 }
                 onMakeModerator={(id) =>
-                  runAction(id, () => adminMakeModerator(id), "Moderator qilindi")
+                  runUserAction(id, () => adminMakeModerator(id), "Moderator qilindi")
                 }
                 onRemoveModerator={(id) =>
-                  runAction(id, () => adminRemoveModerator(id), "Moderatorlik olib tashlandi")
+                  runUserAction(id, () => adminRemoveModerator(id), "Moderatorlik olib tashlandi")
                 }
                 onMakeBusiness={(id) =>
-                  runAction(id, () => adminMakeBusiness(id), "Biznes akkaunt qilindi")
+                  runUserAction(id, () => adminMakeBusiness(id), "Biznes akkaunt qilindi")
                 }
                 onRemoveBusiness={(id) =>
-                  runAction(id, () => adminRemoveBusiness(id), "Oddiy hisobga qaytarildi")
+                  runUserAction(id, () => adminRemoveBusiness(id), "Oddiy hisobga qaytarildi")
                 }
-                index={i}
               />
             ))
           )}

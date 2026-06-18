@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isActionError } from "@/lib/action-result";
 import { registerUser } from "@/lib/actions";
+import { dispatchWelcomeBonusCheck } from "@/lib/welcome-bonus-celebration";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
@@ -47,6 +48,7 @@ export default function RegisterPage() {
 
     router.push("/");
     router.refresh();
+    window.setTimeout(() => dispatchWelcomeBonusCheck(), 300);
   };
 
   return (

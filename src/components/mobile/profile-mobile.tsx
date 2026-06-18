@@ -29,6 +29,7 @@ import { AD_STATUS_LABELS, AD_STATUS_STYLES } from "@/lib/constants";
 import { toast } from "sonner";
 import { isActionError } from "@/lib/action-result";
 import { switchToBusinessAccount } from "@/lib/actions";
+import { dispatchWelcomeBonusCheck } from "@/lib/welcome-bonus-celebration";
 import { ProfileSettings } from "@/components/mobile/profile-settings";
 import { MonetkaWalletCard, CoinHistoryTable } from "@/components/mobile/monetka-wallet";
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
@@ -112,8 +113,9 @@ export function ProfileMobile({
       toast.error(result.error);
       return;
     }
-    toast.success("Biznes akkaunt faollashtirildi! Endi aksiyalar yaratishingiz mumkin.");
+    toast.success("Biznes akkaunt faollashtirildi!");
     router.refresh();
+    dispatchWelcomeBonusCheck();
   };
 
   const initials = (displayName || user.name || user.email)?.[0]?.toUpperCase() || "?";

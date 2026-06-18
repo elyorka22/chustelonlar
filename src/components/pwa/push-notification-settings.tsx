@@ -10,7 +10,6 @@ import {
   unsubscribeFromPush,
 } from "@/lib/push-client";
 import { cn } from "@/lib/utils";
-import { isActionError } from "@/lib/action-result";
 
 export function PushNotificationSettings() {
   const [enabled, setEnabled] = useState(false);
@@ -29,24 +28,28 @@ export function PushNotificationSettings() {
 
   const handleToggle = () => {
     startTransition(async () => {
-      if (enabled) {
-        const result = await unsubscribeFromPush();
-        if (isActionError(result)) {
-          toast.error(result.error);
+      try {
+        if (enabled) {
+          const result = await unsubscribeFromPush();
+          if (!result.ok) {
+            toast.error(result.error || "Xatolik yuz berdi");
+            return;
+          }
+          setEnabled(false);
+          toast.success("Bildirishnomalar o'chirildi");
           return;
         }
-        setEnabled(false);
-        toast.success("Bildirishnomalar o'chirildi");
-        return;
-      }
 
-      const result = await subscribeToPush();
-      if (!result.ok) {
-        toast.error(result.error || "Xatolik yuz berdi");
-        return;
+        const result = await subscribeToPush();
+        if (!result.ok) {
+          toast.error(result.error || "Xatolik yuz berdi");
+          return;
+        }
+        setEnabled(true);
+        toast.success("Bildirishnomalar yoqildi");
+      } catch {
+        toast.error("Xatolik yuz berdi");
       }
-      setEnabled(true);
-      toast.success("Bildirishnomalar yoqildi");
     });
   };
 

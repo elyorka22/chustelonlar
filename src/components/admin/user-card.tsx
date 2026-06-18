@@ -1,10 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Shield, ShieldOff, UserCog, UserMinus, Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatRelativeDate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { formatRelativeDate, cn } from "@/lib/utils";
 
 interface UserCardProps {
   id: string;
@@ -38,6 +36,9 @@ function roleBadge(role: string) {
   return { label: "Faol", className: "bg-[#22C55E]/10 text-[#22C55E]" };
 }
 
+const actionBtn =
+  "flex h-10 items-center justify-center gap-1 rounded-xl text-xs font-bold touch-manipulation active:scale-[0.97] transition-transform disabled:pointer-events-none disabled:opacity-50";
+
 export function UserCard({
   id,
   name,
@@ -54,17 +55,11 @@ export function UserCard({
   onMakeBusiness,
   onRemoveBusiness,
   loading = false,
-  index = 0,
 }: UserCardProps) {
   const badge = roleBadge(role);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: index * 0.03 }}
-      className="rounded-[20px] bg-white p-4 shadow-[0_2px_16px_rgba(15,23,42,0.06)]"
-    >
+    <div className="rounded-[20px] bg-white p-4 shadow-[0_2px_16px_rgba(15,23,42,0.06)]">
       <div className="flex items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 text-sm font-bold text-primary">
           {image ? (
@@ -93,101 +88,93 @@ export function UserCard({
 
       {role === "BANNED" && (
         <div className="mt-3">
-          <motion.button
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             disabled={loading}
             onClick={() => onUnban?.(id)}
-            className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-[#22C55E]/10 text-xs font-bold text-[#22C55E]"
+            className={cn(actionBtn, "w-full bg-[#22C55E]/10 text-[#22C55E]")}
           >
             <ShieldOff className="h-4 w-4" />
             Unban
-          </motion.button>
+          </button>
         </div>
       )}
 
       {role === "USER" && (
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <motion.button
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             disabled={loading}
             onClick={() => onBan?.(id)}
-            className="flex h-10 items-center justify-center gap-1 rounded-xl bg-[#EF4444]/10 text-xs font-bold text-[#EF4444]"
+            className={cn(actionBtn, "bg-[#EF4444]/10 text-[#EF4444]")}
           >
             <Shield className="h-4 w-4" />
             Ban
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             disabled={loading}
             onClick={() => onMakeBusiness?.(id)}
-            className="flex h-10 items-center justify-center gap-1 rounded-xl bg-amber-500/10 text-xs font-bold text-amber-700"
+            className={cn(actionBtn, "bg-amber-500/10 text-amber-700")}
           >
             <Store className="h-4 w-4" />
             Biznes
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             disabled={loading}
             onClick={() => onMakeModerator?.(id)}
-            className="flex h-10 items-center justify-center gap-1 rounded-xl bg-[#8B5CF6]/10 text-xs font-bold text-[#8B5CF6]"
+            className={cn(actionBtn, "bg-[#8B5CF6]/10 text-[#8B5CF6]")}
           >
             <UserCog className="h-4 w-4" />
             Moderator
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             disabled={loading}
             onClick={() => onMakeAdmin?.(id)}
-            className="flex h-10 items-center justify-center gap-1 rounded-xl bg-primary/10 text-xs font-bold text-primary"
+            className={cn(actionBtn, "bg-primary/10 text-primary")}
           >
             <UserCog className="h-4 w-4" />
             Admin
-          </motion.button>
+          </button>
         </div>
       )}
 
       {role === "BUSINESS" && (
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <motion.button
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             disabled={loading}
             onClick={() => onBan?.(id)}
-            className="flex h-10 items-center justify-center gap-1 rounded-xl bg-[#EF4444]/10 text-xs font-bold text-[#EF4444]"
+            className={cn(actionBtn, "bg-[#EF4444]/10 text-[#EF4444]")}
           >
             <Shield className="h-4 w-4" />
             Ban
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             disabled={loading}
             onClick={() => onRemoveBusiness?.(id)}
-            className="flex h-10 items-center justify-center gap-1 rounded-xl bg-[#F1F5F9] text-xs font-bold text-[#64748B]"
+            className={cn(actionBtn, "bg-[#F1F5F9] text-[#64748B]")}
           >
             <UserMinus className="h-4 w-4" />
             Oddiy
-          </motion.button>
+          </button>
         </div>
       )}
 
       {role === "MODERATOR" && (
         <div className="mt-3">
-          <motion.button
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             disabled={loading}
             onClick={() => onRemoveModerator?.(id)}
-            className="flex h-10 w-full items-center justify-center gap-1 rounded-xl bg-[#F1F5F9] text-xs font-bold text-[#64748B]"
+            className={cn(actionBtn, "w-full bg-[#F1F5F9] text-[#64748B]")}
           >
             <UserMinus className="h-4 w-4" />
             Moderatorlikni olib tashlash
-          </motion.button>
+          </button>
         </div>
       )}
 
@@ -196,6 +183,6 @@ export function UserCard({
           Administrator
         </Badge>
       )}
-    </motion.div>
+    </div>
   );
 }

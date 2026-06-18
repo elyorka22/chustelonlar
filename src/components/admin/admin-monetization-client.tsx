@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Plus, Minus, Coins, Save, Loader2, Gift, Store } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
-import { isActionError } from "@/lib/action-result";
 import {
   adminAdjustCoins,
   adminSearchUsers,
@@ -14,6 +13,7 @@ import {
   adminDistributeUserWelcomeBonuses,
   adminDistributeBusinessWelcomeBonuses,
 } from "@/lib/actions";
+import { useAsyncAction } from "@/lib/use-async-action";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { describeCategoryPricing } from "@/lib/category-pricing";
@@ -54,11 +54,11 @@ export function AdminMonetizationClient({
   const [selectedUser, setSelectedUser] = useState<SearchedUser | null>(null);
   const [coinAmount, setCoinAmount] = useState("10");
   const [coinNote, setCoinNote] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const { run, isLoading } = useAsyncAction();
 
   const handleSaveSettings = () => {
-    startTransition(async () => {
-      const result = await adminUpdateMonetizationSettings({
+    run("save-settings", () =>
+      adminUpdateMonetizationSettings({
         coinValueUzs: settings.coinValueUzs,
         topPromotionCost: settings.topPromotionCost,
         vipPromotionCost: settings.vipPromotionCost,
@@ -76,24 +76,17 @@ export function AdminMonetizationClient({
         contactWhatsapp: settings.contactWhatsapp ?? undefined,
         newUserWelcomeBonus: settings.newUserWelcomeBonus,
         newBusinessWelcomeBonus: settings.newBusinessWelcomeBonus,
-      });
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success("Sozlamalar saqlandi");
-    });
+      }),
+      { successMessage: "Sozlamalar saqlandi" }
+    );
   };
 
   const handleSearch = () => {
     if (!searchQuery.trim()) return;
-    startTransition(async () => {
-      const result = await adminSearchUsers(searchQuery);
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      setUsers(result.users ?? []);
+    run("search-users", () => adminSearchUsers(searchQuery), {
+      onSuccess: (result) => {
+        setUsers((result as { users?: SearchedUser[] }).users ?? []);
+      },
     });
   };
 
@@ -105,50 +98,47 @@ export function AdminMonetizationClient({
       return;
     }
 
-    startTransition(async () => {
-      const result = await adminAdjustCoins(
+    run("adjust-coins", () =>
+      adminAdjustCoins(
         selectedUser.id,
         amount,
         sign > 0 ? "TOPUP" : "SPEND",
         coinNote || undefined
-      );
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
+      ),
+      {
+        successMessage: "Balans yangilandi",
+        onSuccess: (result) => {
+          const balance = (result as { coinBalance?: number }).coinBalance;
+          setSelectedUser((u) =>
+            u ? { ...u, coinBalance: balance ?? u.coinBalance } : u
+          );
+          setUsers((list) =>
+            list.map((u) =>
+              u.id === selectedUser.id
+                ? { ...u, coinBalance: balance ?? u.coinBalance }
+                : u
+            )
+          );
+        },
       }
-      toast.success("Balans yangilandi");
-      setSelectedUser((u) =>
-        u ? { ...u, coinBalance: result.coinBalance ?? u.coinBalance } : u
-      );
-      setUsers((list) =>
-        list.map((u) =>
-          u.id === selectedUser.id
-            ? { ...u, coinBalance: result.coinBalance ?? u.coinBalance }
-            : u
-        )
-      );
-    });
+    );
   };
 
   const handleDistributeUserBonuses = () => {
-    startTransition(async () => {
-      const result = await adminDistributeUserWelcomeBonuses();
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(`${result.count ?? 0} ta yangi foydalanuvchiga bonus berildi`);
+    run("distribute-user", () => adminDistributeUserWelcomeBonuses(), {
+      onSuccess: (result) => {
+        const count = (result as { count?: number }).count ?? 0;
+        toast.success(`${count} ta yangi foydalanuvchiga bonus berildi`);
+      },
     });
   };
 
   const handleDistributeBusinessBonuses = () => {
-    startTransition(async () => {
-      const result = await adminDistributeBusinessWelcomeBonuses();
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(`${result.count ?? 0} ta biznes akkauntga bonus berildi`);
+    run("distribute-business", () => adminDistributeBusinessWelcomeBonuses(), {
+      onSuccess: (result) => {
+        const count = (result as { count?: number }).count ?? 0;
+        toast.success(`${count} ta biznes akkauntga bonus berildi`);
+      },
     });
   };
 
@@ -159,18 +149,14 @@ export function AdminMonetizationClient({
   };
 
   const saveCategoryPricing = (cat: CategoryData) => {
-    startTransition(async () => {
-      const result = await adminUpdateCategoryPricing(cat.slug, {
+    run(`category-${cat.slug}`, () =>
+      adminUpdateCategoryPricing(cat.slug, {
         pricingType: cat.pricingType ?? "FREE",
         listingCoinCost: cat.listingCoinCost ?? 0,
         freeLimit: cat.freeLimit ?? 0,
-      });
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(`${cat.label} saqlandi`);
-    });
+      }),
+      { successMessage: `${cat.label} saqlandi` }
+    );
   };
 
   const numInput = (
@@ -261,10 +247,10 @@ export function AdminMonetizationClient({
           <button
             type="button"
             onClick={handleSaveSettings}
-            disabled={isPending}
-            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[14px] font-bold text-white disabled:opacity-50"
+            disabled={isLoading("save-settings")}
+            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[14px] font-bold text-white touch-manipulation disabled:opacity-50"
           >
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {isLoading("save-settings") ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Saqlash
           </button>
         </section>
@@ -286,29 +272,29 @@ export function AdminMonetizationClient({
           <button
             type="button"
             onClick={handleSaveSettings}
-            disabled={isPending}
-            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-primary/10 text-[13px] font-bold text-primary disabled:opacity-50"
+            disabled={isLoading("save-settings")}
+            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-primary/10 text-[13px] font-bold text-primary touch-manipulation disabled:opacity-50"
           >
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {isLoading("save-settings") ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Bonus summalarini saqlash
           </button>
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={handleDistributeUserBonuses}
-              disabled={isPending}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-violet-500 text-[13px] font-bold text-white disabled:opacity-50"
+              disabled={isLoading("distribute-user")}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-violet-500 text-[13px] font-bold text-white touch-manipulation disabled:opacity-50"
             >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gift className="h-4 w-4" />}
+              {isLoading("distribute-user") ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gift className="h-4 w-4" />}
               Yangi foydalanuvchilarga tarqatish
             </button>
             <button
               type="button"
               onClick={handleDistributeBusinessBonuses}
-              disabled={isPending}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-amber-500 text-[13px] font-bold text-[#0F172A] disabled:opacity-50"
+              disabled={isLoading("distribute-business")}
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-amber-500 text-[13px] font-bold text-[#0F172A] touch-manipulation disabled:opacity-50"
             >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
+              {isLoading("distribute-business") ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
               Biznes akkauntlarga tarqatish
             </button>
           </div>
@@ -332,8 +318,8 @@ export function AdminMonetizationClient({
             <button
               type="button"
               onClick={handleSearch}
-              disabled={isPending}
-              className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-white"
+              disabled={isLoading("search-users")}
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-white touch-manipulation disabled:opacity-50"
             >
               <Search className="h-4 w-4" />
             </button>
@@ -397,16 +383,16 @@ export function AdminMonetizationClient({
                 <button
                   type="button"
                   onClick={() => handleAdjustCoins(1)}
-                  disabled={isPending}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-500 py-3 text-[13px] font-bold text-white"
+                  disabled={isLoading("adjust-coins")}
+                  className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-500 py-3 text-[13px] font-bold text-white touch-manipulation disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" /> Qo&apos;shish
                 </button>
                 <button
                   type="button"
                   onClick={() => handleAdjustCoins(-1)}
-                  disabled={isPending}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-rose-500 py-3 text-[13px] font-bold text-white"
+                  disabled={isLoading("adjust-coins")}
+                  className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-rose-500 py-3 text-[13px] font-bold text-white touch-manipulation disabled:opacity-50"
                 >
                   <Minus className="h-4 w-4" /> Ayirish
                 </button>
@@ -501,8 +487,8 @@ export function AdminMonetizationClient({
                 <button
                   type="button"
                   onClick={() => saveCategoryPricing(cat)}
-                  disabled={isPending}
-                  className="mt-2 text-[12px] font-bold text-primary"
+                  disabled={isLoading(`category-${cat.slug}`)}
+                  className="mt-2 text-[12px] font-bold text-primary touch-manipulation disabled:opacity-50"
                 >
                   Saqlash
                 </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,6 +45,22 @@ export function AdminHeader({ notificationCount = 0 }: AdminHeaderProps) {
   const { isAdmin } = useAdminStaff();
   const menuItems = allMenuItems.filter((item) => isAdmin || !item.adminOnly);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
   return (
     <>
       <header className="sticky top-0 z-40 flex h-14 items-center justify-between bg-[#F8FAFC]/90 px-4 backdrop-blur-lg">
@@ -74,9 +90,9 @@ export function AdminHeader({ notificationCount = 0 }: AdminHeaderProps) {
             <span className="text-xs font-bold text-[#0F172A]">Sayt</span>
           </Link>
 
-          <button
-            type="button"
-            className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm"
+          <Link
+            href="/admin/reports"
+            className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm touch-manipulation"
             aria-label="Bildirishnomalar"
           >
             <Bell className="h-5 w-5 text-[#0F172A]" />
@@ -85,7 +101,7 @@ export function AdminHeader({ notificationCount = 0 }: AdminHeaderProps) {
                 {notificationCount > 9 ? "9+" : notificationCount}
               </span>
             )}
-          </button>
+          </Link>
         </div>
       </header>
 

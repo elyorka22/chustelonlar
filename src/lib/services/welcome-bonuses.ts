@@ -134,3 +134,47 @@ export async function distributePendingBusinessWelcomeBonuses(): Promise<number>
 
   return count;
 }
+
+export async function getPendingWelcomeCelebration(
+  userId: string
+): Promise<{ type: "user" | "business"; amount: number } | null> {
+  const settings = await getMonetizationSettings();
+
+  const user = await getPrisma().user.findUnique({
+    where: { id: userId },
+    select: {
+      userWelcomeBonusGranted: true,
+      businessWelcomeBonusGranted: true,
+      userWelcomeCelebrationShown: true,
+      businessWelcomeCelebrationShown: true,
+    },
+  });
+
+  if (!user) return null;
+
+  if (
+    user.userWelcomeBonusGranted &&
+    !user.userWelcomeCelebrationShown &&
+    settings.newUserWelcomeBonus > 0
+  ) {
+    await getPrisma().user.update({
+      where: { id: userId },
+      data: { userWelcomeCelebrationShown: true },
+    });
+    return { type: "user", amount: settings.newUserWelcomeBonus };
+  }
+
+  if (
+    user.businessWelcomeBonusGranted &&
+    !user.businessWelcomeCelebrationShown &&
+    settings.newBusinessWelcomeBonus > 0
+  ) {
+    await getPrisma().user.update({
+      where: { id: userId },
+      data: { businessWelcomeCelebrationShown: true },
+    });
+    return { type: "business", amount: settings.newBusinessWelcomeBonus };
+  }
+
+  return null;
+}

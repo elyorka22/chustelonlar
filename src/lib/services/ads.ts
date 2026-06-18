@@ -709,9 +709,14 @@ export async function promoteToBusiness(userId: string) {
   });
 
   const { tryGrantBusinessWelcomeBonus } = await import("@/lib/services/welcome-bonuses");
-  await tryGrantBusinessWelcomeBonus(userId);
+  const bonus = await tryGrantBusinessWelcomeBonus(userId);
 
-  return user;
+  return {
+    user,
+    welcomeBonus: bonus.granted
+      ? { type: "business" as const, amount: bonus.amount }
+      : null,
+  };
 }
 
 export async function demoteFromBusiness(userId: string) {

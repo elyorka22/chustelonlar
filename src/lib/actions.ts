@@ -61,9 +61,14 @@ export async function registerUser(formData: FormData) {
   });
 
   const { tryGrantUserWelcomeBonus } = await import("@/lib/services/welcome-bonuses");
-  await tryGrantUserWelcomeBonus(user.id);
+  const bonus = await tryGrantUserWelcomeBonus(user.id);
 
-  return { success: true };
+  return {
+    success: true,
+    welcomeBonus: bonus.granted
+      ? { type: "user" as const, amount: bonus.amount }
+      : undefined,
+  };
 }
 
 export async function submitAd(input: CreateAdInput) {
@@ -695,10 +700,26 @@ export async function switchToBusinessAccount() {
   }
 
   const { promoteToBusiness } = await import("@/lib/services/ads");
-  await promoteToBusiness(session.user.id);
+  const { welcomeBonus } = await promoteToBusiness(session.user.id);
   revalidatePath("/dashboard");
   revalidatePath("/chegirmalar");
-  return { success: true };
+  return {
+    success: true,
+    welcomeBonus: welcomeBonus ?? undefined,
+  };
+}
+
+export async function claimWelcomeCelebration() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Avtorizatsiya talab qilinadi" };
+  }
+
+  const { getPendingWelcomeCelebration } = await import(
+    "@/lib/services/welcome-bonuses"
+  );
+  const celebration = await getPendingWelcomeCelebration(session.user.id);
+  return { success: true, celebration };
 }
 
 export async function adminDistributeUserWelcomeBonuses() {

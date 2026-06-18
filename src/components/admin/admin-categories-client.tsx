@@ -1,17 +1,18 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Trash2, ImageIcon, Plus, X } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { CategoryGridCard } from "@/components/mobile/category-grid-card";
-import { isActionError } from "@/lib/action-result";
 import {
   adminUpdateCategoryImage,
   adminRemoveCategoryImage,
   adminCreateCategory,
   adminDeleteCategory,
 } from "@/lib/actions";
+import { useAsyncAction } from "@/lib/use-async-action";
+import { isActionError } from "@/lib/action-result";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -56,7 +57,7 @@ export function AdminCategoriesClient({
     emoji: "📦",
     iconBg: "bg-blue-100",
   });
-  const [isPending, startTransition] = useTransition();
+  const { run, isLoading } = useAsyncAction();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const createFileRef = useRef<HTMLInputElement | null>(null);
 
@@ -64,40 +65,32 @@ export function AdminCategoriesClient({
     setUploading(slug);
     try {
       const imageUrl = await uploadCategoryImage(file);
-      if (!imageUrl) {
-        setUploading(null);
-        return;
-      }
+      if (!imageUrl) return;
 
-      startTransition(async () => {
-        const result = await adminUpdateCategoryImage(slug, imageUrl);
-        setUploading(null);
-        if (isActionError(result)) {
-          toast.error(result.error);
-          return;
-        }
-        setCategories((prev) =>
-          prev.map((c) => (c.slug === slug ? { ...c, imageUrl } : c))
-        );
-        toast.success("Karta rasmi yangilandi");
-      });
-    } catch {
-      setUploading(null);
-      toast.error("Yuklashda xatolik");
-    }
-  };
-
-  const handleRemoveImage = (slug: string) => {
-    startTransition(async () => {
-      const result = await adminRemoveCategoryImage(slug);
+      const result = await adminUpdateCategoryImage(slug, imageUrl);
       if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
       setCategories((prev) =>
-        prev.map((c) => (c.slug === slug ? { ...c, imageUrl: null } : c))
+        prev.map((c) => (c.slug === slug ? { ...c, imageUrl } : c))
       );
-      toast.success("Emoji qaytarildi");
+      toast.success("Karta rasmi yangilandi");
+    } catch {
+      toast.error("Yuklashda xatolik");
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleRemoveImage = (slug: string) => {
+    run(`remove-image-${slug}`, () => adminRemoveCategoryImage(slug), {
+      successMessage: "Emoji qaytarildi",
+      onSuccess: () => {
+        setCategories((prev) =>
+          prev.map((c) => (c.slug === slug ? { ...c, imageUrl: null } : c))
+        );
+      },
     });
   };
 
@@ -119,14 +112,14 @@ export function AdminCategoriesClient({
       return;
     }
 
-    startTransition(async () => {
+    run("create-category", async () => {
       let imageUrl: string | null = null;
 
       if (createImageFile) {
         setUploading("new");
         imageUrl = await uploadCategoryImage(createImageFile);
         setUploading(null);
-        if (!imageUrl) return;
+        if (!imageUrl) return { error: "Rasm yuklanmadi" };
       }
 
       const fd = new FormData();
@@ -137,30 +130,23 @@ export function AdminCategoriesClient({
       if (imageUrl) fd.append("imageUrl", imageUrl);
 
       const result = await adminCreateCategory(fd);
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      if (result.category) {
+      if ("category" in result && result.category) {
         setCategories((prev) => [...prev, result.category!]);
       }
       resetCreateForm();
       setShowForm(false);
-      toast.success("Kategoriya yaratildi");
-    });
+      return result;
+    }, { successMessage: "Kategoriya yaratildi" });
   };
 
   const handleDelete = (slug: string, label: string) => {
     if (!confirm(`"${label}" kategoriyasini o'chirmoqchimisiz?`)) return;
 
-    startTransition(async () => {
-      const result = await adminDeleteCategory(slug);
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      setCategories((prev) => prev.filter((c) => c.slug !== slug));
-      toast.success(result.message || "O'chirildi");
+    run(`delete-${slug}`, () => adminDeleteCategory(slug), {
+      successMessage: "O'chirildi",
+      onSuccess: () => {
+        setCategories((prev) => prev.filter((c) => c.slug !== slug));
+      },
     });
   };
 
@@ -183,15 +169,14 @@ export function AdminCategoriesClient({
               Bosh sahifa kartochkalariga rasm qo&apos;ying
             </p>
           </div>
-          <motion.button
+          <button
             type="button"
-            whileTap={{ scale: 0.95 }}
             onClick={() => setShowForm(!showForm)}
-            className="flex h-10 items-center gap-1.5 rounded-2xl bg-primary px-4 text-sm font-bold text-white shadow-md shadow-primary/25"
+            className="flex h-10 items-center gap-1.5 rounded-2xl bg-primary px-4 text-sm font-bold text-white shadow-md shadow-primary/25 touch-manipulation active:scale-[0.97]"
           >
             {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             {showForm ? "Yopish" : "Yangi"}
-          </motion.button>
+          </button>
         </div>
 
         <AnimatePresence>
@@ -236,28 +221,26 @@ export function AdminCategoriesClient({
                 <div>
                   <p className="mb-2 text-xs font-semibold text-[#64748B]">Karta rasmi (ixtiyoriy)</p>
                   <div className="flex gap-2">
-                    <motion.button
+                    <button
                       type="button"
-                      whileTap={{ scale: 0.95 }}
                       onClick={() => createFileRef.current?.click()}
-                      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-primary/10 text-xs font-bold text-primary"
+                      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-primary/10 text-xs font-bold text-primary touch-manipulation active:scale-[0.97]"
                     >
                       <Upload className="h-4 w-4" />
                       {createImageFile ? "Boshqasini tanlash" : "Rasm yuklash"}
-                    </motion.button>
+                    </button>
                     {createImageFile && (
-                      <motion.button
+                      <button
                         type="button"
-                        whileTap={{ scale: 0.95 }}
                         onClick={() => {
                           setCreateImageFile(null);
                           setCreateImagePreview(null);
                           if (createFileRef.current) createFileRef.current.value = "";
                         }}
-                        className="flex h-11 items-center justify-center rounded-2xl bg-[#EF4444]/10 px-4 text-xs font-bold text-[#EF4444]"
+                        className="flex h-11 items-center justify-center rounded-2xl bg-[#EF4444]/10 px-4 text-xs font-bold text-[#EF4444] touch-manipulation active:scale-[0.97]"
                       >
                         Olib tashlash
-                      </motion.button>
+                      </button>
                     )}
                   </div>
                   <input
@@ -313,15 +296,14 @@ export function AdminCategoriesClient({
                   </div>
                 </div>
 
-                <motion.button
+                <button
                   type="button"
-                  whileTap={{ scale: 0.98 }}
-                  disabled={isPending || uploading === "new"}
+                  disabled={isLoading("create-category") || uploading === "new"}
                   onClick={handleCreate}
-                  className="flex h-12 w-full items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white disabled:opacity-50"
+                  className="flex h-12 w-full items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white touch-manipulation disabled:opacity-50 active:scale-[0.98]"
                 >
                   {uploading === "new" ? "Yuklanmoqda..." : "Kategoriya yaratish"}
-                </motion.button>
+                </button>
               </div>
             </motion.div>
           )}
@@ -362,42 +344,40 @@ export function AdminCategoriesClient({
                 />
 
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <motion.button
+                  <button
                     type="button"
-                    whileTap={{ scale: 0.95 }}
                     disabled={isUploading}
                     onClick={() => fileRefs.current[cat.slug]?.click()}
-                    className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-primary/10 text-xs font-bold text-primary disabled:opacity-50"
+                    className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-primary/10 text-xs font-bold text-primary touch-manipulation disabled:opacity-50 active:scale-[0.97]"
                   >
                     <Upload className="h-4 w-4" />
                     {cat.imageUrl ? "Rasmni almashtirish" : "Rasm qo'shish"}
-                  </motion.button>
+                  </button>
 
                   {cat.imageUrl && (
-                    <motion.button
+                    <button
                       type="button"
-                      whileTap={{ scale: 0.95 }}
-                      disabled={isUploading}
+                      disabled={isUploading || isLoading(`remove-image-${cat.slug}`)}
                       onClick={() => handleRemoveImage(cat.slug)}
-                      className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#F59E0B]/10 text-xs font-bold text-[#F59E0B] disabled:opacity-50"
+                      className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#F59E0B]/10 text-xs font-bold text-[#F59E0B] touch-manipulation disabled:opacity-50 active:scale-[0.97]"
                     >
                       <ImageIcon className="h-4 w-4" />
                       Emojiga qaytarish
-                    </motion.button>
+                    </button>
                   )}
 
-                  <motion.button
+                  <button
                     type="button"
-                    whileTap={{ scale: 0.95 }}
+                    disabled={isLoading(`delete-${cat.slug}`)}
                     onClick={() => handleDelete(cat.slug, cat.label)}
                     className={cn(
-                      "flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#EF4444]/10 text-xs font-bold text-[#EF4444]",
+                      "flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#EF4444]/10 text-xs font-bold text-[#EF4444] touch-manipulation disabled:opacity-50 active:scale-[0.97]",
                       cat.imageUrl ? "" : "col-span-2"
                     )}
                   >
                     <Trash2 className="h-4 w-4" />
                     O&apos;chirish
-                  </motion.button>
+                  </button>
                 </div>
 
                 <input

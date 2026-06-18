@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Eye, CheckCircle, Trash2, Ban } from "lucide-react";
-import { formatRelativeDate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { formatRelativeDate, cn } from "@/lib/utils";
 import type { ReportStatus } from "@/lib/admin-mock";
 
 interface ReportCardProps {
@@ -36,6 +34,9 @@ const statusStyles: Record<ReportStatus, string> = {
   resolved: "bg-[#22C55E]/10 text-[#22C55E]",
 };
 
+const actionBtn =
+  "flex h-11 w-full flex-col items-center justify-center rounded-xl text-[10px] font-bold touch-manipulation active:scale-[0.97] transition-transform disabled:pointer-events-none disabled:opacity-50";
+
 export function ReportCard({
   id,
   adId,
@@ -50,13 +51,9 @@ export function ReportCard({
   onDeleteAd,
   onIgnore,
   loading = false,
-  index = 0,
 }: ReportCardProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: index * 0.04 }}
+    <div
       className={cn(
         "overflow-hidden rounded-[20px] bg-white shadow-[0_2px_16px_rgba(15,23,42,0.06)]",
         highPriority && "ring-2 ring-[#EF4444]/30"
@@ -91,46 +88,38 @@ export function ReportCard({
       </div>
 
       <div className="grid grid-cols-4 gap-2 border-t border-[#F1F5F9] p-3">
-        <Link href={`/ads/${adId}`}>
-          <motion.div
-            whileTap={{ scale: 0.95 }}
-            className="flex h-11 flex-col items-center justify-center rounded-xl bg-[#F1F5F9] text-[10px] font-bold text-[#64748B]"
-          >
-            <Eye className="mb-0.5 h-4 w-4" />
-            Ko&apos;rish
-          </motion.div>
+        <Link href={`/ads/${adId}`} className={cn(actionBtn, "bg-[#F1F5F9] text-[#64748B]")}>
+          <Eye className="mb-0.5 h-4 w-4" />
+          Ko&apos;rish
         </Link>
-        <motion.button
+        <button
           type="button"
-          whileTap={{ scale: 0.95 }}
           disabled={loading || status === "resolved"}
           onClick={() => onResolve?.(id)}
-          className="flex h-11 flex-col items-center justify-center rounded-xl bg-[#22C55E]/10 text-[10px] font-bold text-[#22C55E] disabled:opacity-40"
+          className={cn(actionBtn, "bg-[#22C55E]/10 text-[#22C55E]")}
         >
           <CheckCircle className="mb-0.5 h-4 w-4" />
           Yechish
-        </motion.button>
-        <motion.button
+        </button>
+        <button
           type="button"
-          whileTap={{ scale: 0.95 }}
           disabled={loading}
           onClick={() => onDeleteAd?.(adId)}
-          className="flex h-11 flex-col items-center justify-center rounded-xl bg-[#EF4444]/10 text-[10px] font-bold text-[#EF4444]"
+          className={cn(actionBtn, "bg-[#EF4444]/10 text-[#EF4444]")}
         >
           <Trash2 className="mb-0.5 h-4 w-4" />
           O&apos;chirish
-        </motion.button>
-        <motion.button
+        </button>
+        <button
           type="button"
-          whileTap={{ scale: 0.95 }}
           disabled={loading}
           onClick={() => onIgnore?.(id)}
-          className="flex h-11 flex-col items-center justify-center rounded-xl bg-[#F8FAFC] text-[10px] font-bold text-[#94A3B8]"
+          className={cn(actionBtn, "bg-[#F8FAFC] text-[#94A3B8]")}
         >
           <Ban className="mb-0.5 h-4 w-4" />
           E&apos;tiborsiz
-        </motion.button>
+        </button>
       </div>
-    </motion.div>
+    </div>
   );
 }

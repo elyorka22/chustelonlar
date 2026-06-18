@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { AdminHeader } from "./admin-header";
 import { ReportCard } from "./report-card";
@@ -10,12 +10,9 @@ import {
   isHighPriorityReport,
   type ReportStatus,
 } from "@/lib/admin-mock";
-import { isActionError } from "@/lib/action-result";
-import {
-  adminDeleteAd,
-  adminResolveReport,
-} from "@/lib/actions";
+import { adminDeleteAd, adminResolveReport } from "@/lib/actions";
 import { toast } from "sonner";
+import { useAsyncAction } from "@/lib/use-async-action";
 
 interface AdminReport {
   id: string;
@@ -40,8 +37,7 @@ export function AdminReportsClient({
 }: AdminReportsClientProps) {
   const [tab, setTab] = useState("all");
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+  const { run, isLoading } = useAsyncAction();
 
   const enriched = useMemo(() => {
     return reports
@@ -59,30 +55,18 @@ export function AdminReportsClient({
   }, [enriched, tab]);
 
   const handleResolve = (reportId: string) => {
-    setLoadingId(reportId);
-    startTransition(async () => {
-      const result = await adminResolveReport(reportId);
-      setLoadingId(null);
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      setResolvedIds((prev) => new Set([...prev, reportId]));
-      toast.success("Shikoyat yechildi");
+    run(`report-${reportId}`, () => adminResolveReport(reportId), {
+      successMessage: "Shikoyat yechildi",
+      onSuccess: () => {
+        setResolvedIds((prev) => new Set([...prev, reportId]));
+      },
     });
   };
 
   const handleDelete = (adId: string) => {
-    setLoadingId(adId);
-    startTransition(async () => {
-      const result = await adminDeleteAd(adId);
-      setLoadingId(null);
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success("E'lon o'chirildi");
-      window.location.reload();
+    run(`delete-ad-${adId}`, () => adminDeleteAd(adId), {
+      successMessage: "E'lon o'chirildi",
+      reload: true,
     });
   };
 
@@ -107,7 +91,7 @@ export function AdminReportsClient({
         <p className="mt-0.5 text-sm text-[#64748B]">{filtered.length} ta shikoyat</p>
 
         <Tabs value={tab} onValueChange={setTab} className="mt-4">
-          <TabsList className="w-full">
+          <TabsList>
             <TabsTrigger value="all" className="text-xs">Barchasi</TabsTrigger>
             <TabsTrigger value="pending" className="text-xs">Yangi</TabsTrigger>
             <TabsTrigger value="reviewing" className="text-xs">Ko&apos;rib chiqilmoqda</TabsTrigger>
@@ -135,7 +119,9 @@ export function AdminReportsClient({
                 createdAt={report.createdAt}
                 status={report.status}
                 highPriority={report.highPriority}
-                loading={loadingId === report.id || loadingId === report.ad.id}
+                loading={
+                  isLoading(`report-${report.id}`) || isLoading(`delete-ad-${report.ad.id}`)
+                }
                 onResolve={handleResolve}
                 onDeleteAd={handleDelete}
                 onIgnore={handleIgnore}

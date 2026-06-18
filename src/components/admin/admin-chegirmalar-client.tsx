@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Check, X, MapPin, Clock } from "lucide-react";
 import { AdminHeader } from "./admin-header";
-import { isActionError } from "@/lib/action-result";
 import { moderateChegirma, adminDeleteChegirma } from "@/lib/actions";
 import { getChegirmaCategoryLabel } from "@/lib/chegirma-constants";
-import { toast } from "sonner";
+import { useAsyncAction } from "@/lib/use-async-action";
+import { cn } from "@/lib/utils";
 import type { ChegirmaData } from "@/types";
 
 interface AdminChegirmalarClientProps {
@@ -16,38 +16,32 @@ interface AdminChegirmalarClientProps {
   notificationCount: number;
 }
 
+const actionBtn =
+  "flex h-11 items-center justify-center gap-1 rounded-2xl text-[12px] font-bold touch-manipulation active:scale-[0.97] transition-transform disabled:pointer-events-none disabled:opacity-50";
+
 export function AdminChegirmalarClient({
   items: initialItems,
   notificationCount,
 }: AdminChegirmalarClientProps) {
   const [items, setItems] = useState(initialItems);
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const { run, isLoading } = useAsyncAction();
 
   const handleModerate = (id: string, action: "approve" | "reject") => {
-    setPendingId(id);
-    startTransition(async () => {
-      const result = await moderateChegirma(id, action);
-      setPendingId(null);
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      setItems((prev) => prev.filter((i) => i.id !== id));
-      toast.success(action === "approve" ? "Tasdiqlandi" : "Rad etildi");
+    run(`chegirma-${id}`, () => moderateChegirma(id, action), {
+      successMessage: action === "approve" ? "Tasdiqlandi" : "Rad etildi",
+      onSuccess: () => {
+        setItems((prev) => prev.filter((i) => i.id !== id));
+      },
     });
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("O'chirilsinmi?")) return;
-    startTransition(async () => {
-      const result = await adminDeleteChegirma(id);
-      if (isActionError(result)) {
-        toast.error(result.error);
-        return;
-      }
-      setItems((prev) => prev.filter((i) => i.id !== id));
-      toast.success("O'chirildi");
+    run(`delete-chegirma-${id}`, () => adminDeleteChegirma(id), {
+      successMessage: "O'chirildi",
+      onSuccess: () => {
+        setItems((prev) => prev.filter((i) => i.id !== id));
+      },
     });
   };
 
@@ -74,7 +68,8 @@ export function AdminChegirmalarClient({
         )}
 
         {items.map((item, index) => {
-          const loading = pendingId === item.id || isPending;
+          const loading =
+            isLoading(`chegirma-${item.id}`) || isLoading(`delete-chegirma-${item.id}`);
           return (
             <motion.div
               key={item.id}
@@ -111,7 +106,7 @@ export function AdminChegirmalarClient({
                   type="button"
                   disabled={loading}
                   onClick={() => handleModerate(item.id, "approve")}
-                  className="flex h-11 items-center justify-center gap-1 rounded-2xl bg-emerald-50 text-[12px] font-bold text-emerald-600 disabled:opacity-50"
+                  className={cn(actionBtn, "bg-emerald-50 text-emerald-600")}
                 >
                   <Check className="h-4 w-4" />
                   Tasdiq
@@ -120,7 +115,7 @@ export function AdminChegirmalarClient({
                   type="button"
                   disabled={loading}
                   onClick={() => handleModerate(item.id, "reject")}
-                  className="flex h-11 items-center justify-center gap-1 rounded-2xl bg-rose-50 text-[12px] font-bold text-rose-600 disabled:opacity-50"
+                  className={cn(actionBtn, "bg-rose-50 text-rose-600")}
                 >
                   <X className="h-4 w-4" />
                   Rad
@@ -129,7 +124,7 @@ export function AdminChegirmalarClient({
                   type="button"
                   disabled={loading}
                   onClick={() => handleDelete(item.id)}
-                  className="flex h-11 items-center justify-center gap-1 rounded-2xl bg-[#F8FAFC] text-[12px] font-bold text-[#64748B] disabled:opacity-50"
+                  className={cn(actionBtn, "bg-[#F8FAFC] text-[#64748B]")}
                 >
                   O&apos;chirish
                 </button>
