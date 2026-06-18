@@ -11,6 +11,7 @@ import { InsufficientCoinsModal } from "@/components/mobile/insufficient-coins-m
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
 import { MAP_CENTER, DISTRICTS } from "@/lib/constants";
 import { CHEGIRMA_CATEGORIES } from "@/lib/chegirma-constants";
+import { isActionError } from "@/lib/action-result";
 import { submitChegirma, getChegirmaCostPreview } from "@/lib/actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -123,7 +124,7 @@ export function CreateChegirmaMobile({ initialBalance = 0 }: { initialBalance?: 
     });
     setLoading(false);
 
-    if (result.error) {
+    if (isActionError(result)) {
       if (result.code === "INSUFFICIENT_COINS") {
         setInsufficientModal({
           balance: result.balance ?? initialBalance,

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ImageIcon, Plus, Trash2, Upload } from "lucide-react";
 import { AdminHeader } from "./admin-header";
+import { isActionError } from "@/lib/action-result";
 import {
   adminDeletePromoBanner,
   adminRemovePromoBannerImage,
@@ -202,7 +203,7 @@ export function AdminBannersClient({
       startTransition(async () => {
         const result = await adminUpdatePromoBannerImage(bannerId, imageUrl);
         setUploadingId(null);
-        if (result.error) {
+        if (isActionError(result)) {
           toast.error(result.error);
           return;
         }
@@ -221,7 +222,7 @@ export function AdminBannersClient({
   const handleRemoveImage = (bannerId: string) => {
     startTransition(async () => {
       const result = await adminRemovePromoBannerImage(bannerId);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -261,7 +262,7 @@ export function AdminBannersClient({
       formData.set("isActive", String(draft.isActive));
 
       const result = await adminSavePromoBanner(formData);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -277,7 +278,7 @@ export function AdminBannersClient({
 
     startTransition(async () => {
       const result = await adminDeletePromoBanner(id);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }

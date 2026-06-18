@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPrice, formatRelativeDate } from "@/lib/utils";
 import { AD_STATUS_LABELS } from "@/lib/constants";
+import { isActionError } from "@/lib/action-result";
 import { markAdSold, removeAd } from "@/lib/actions";
 import { toast } from "sonner";
 import type { AdWithImages } from "@/types";
@@ -33,7 +34,7 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "destruc
 export function DashboardClient({ ads, stats }: DashboardClientProps) {
   const handleMarkSold = async (adId: string) => {
     const result = await markAdSold(adId);
-    if (result.error) {
+    if (isActionError(result)) {
       toast.error(result.error);
       return;
     }
@@ -50,7 +51,7 @@ export function DashboardClient({ ads, stats }: DashboardClientProps) {
       return;
     }
     const result = await removeAd(adId);
-    if (result.error) {
+    if (isActionError(result)) {
       toast.error(result.error);
       return;
     }

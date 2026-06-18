@@ -19,6 +19,7 @@ import { AdCardGrid } from "@/components/mobile/ad-card-grid";
 import { DialogRoot, DialogTrigger, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { formatPrice, formatRelativeDate } from "@/lib/utils";
+import { isActionError } from "@/lib/action-result";
 import { toggleAdFavorite, submitReport, trackContactClick, checkAdFavorited } from "@/lib/actions";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
@@ -75,7 +76,7 @@ export function AdDetailMobile({
   const handleFavorite = async () => {
     if (!session) { toast.error("Avval tizimga kiring"); return; }
     const result = await toggleAdFavorite(ad.id);
-    if (result.error) { toast.error(result.error); return; }
+    if (isActionError(result)) { toast.error(result.error); return; }
     if ("favorited" in result) {
       setFavorited(result.favorited);
       toast.success(result.favorited ? "Saqlanganlar" : "Olib tashlandi");
@@ -93,7 +94,7 @@ export function AdDetailMobile({
 
   const handleReport = async () => {
     const result = await submitReport(ad.id, reportReason);
-    if (result.error) { toast.error(result.error); return; }
+    if (isActionError(result)) { toast.error(result.error); return; }
     toast.success("Shikoyat yuborildi");
     setReportOpen(false);
   };

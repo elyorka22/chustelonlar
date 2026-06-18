@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Search, Plus, Minus, Coins, Save, Loader2 } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
+import { isActionError } from "@/lib/action-result";
 import {
   adminAdjustCoins,
   adminSearchUsers,
@@ -72,7 +73,7 @@ export function AdminMonetizationClient({
         contactPhone: settings.contactPhone ?? undefined,
         contactWhatsapp: settings.contactWhatsapp ?? undefined,
       });
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -84,7 +85,7 @@ export function AdminMonetizationClient({
     if (!searchQuery.trim()) return;
     startTransition(async () => {
       const result = await adminSearchUsers(searchQuery);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -107,7 +108,7 @@ export function AdminMonetizationClient({
         sign > 0 ? "TOPUP" : "SPEND",
         coinNote || undefined
       );
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -138,7 +139,7 @@ export function AdminMonetizationClient({
         listingCoinCost: cat.listingCoinCost ?? 0,
         freeLimit: cat.freeLimit ?? 0,
       });
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }

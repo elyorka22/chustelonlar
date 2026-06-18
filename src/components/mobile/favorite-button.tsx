@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
+import { isActionError } from "@/lib/action-result";
 import { toggleAdFavorite } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,7 @@ export function FavoriteButton({
     const result = await toggleAdFavorite(adId);
     setLoading(false);
 
-    if (result.error) {
+    if (isActionError(result)) {
       toast.error(result.error);
       return;
     }

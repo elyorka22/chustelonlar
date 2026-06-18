@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Check, X, MapPin, Clock } from "lucide-react";
 import { AdminHeader } from "./admin-header";
+import { isActionError } from "@/lib/action-result";
 import { moderateChegirma, adminDeleteChegirma } from "@/lib/actions";
 import { getChegirmaCategoryLabel } from "@/lib/chegirma-constants";
 import { toast } from "sonner";
@@ -28,7 +29,7 @@ export function AdminChegirmalarClient({
     startTransition(async () => {
       const result = await moderateChegirma(id, action);
       setPendingId(null);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -41,7 +42,7 @@ export function AdminChegirmalarClient({
     if (!confirm("O'chirilsinmi?")) return;
     startTransition(async () => {
       const result = await adminDeleteChegirma(id);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }

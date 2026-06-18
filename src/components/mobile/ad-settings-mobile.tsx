@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { MobileHeader } from "@/components/mobile/mobile-header";
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
+import { isActionError } from "@/lib/action-result";
 import {
   removeAd,
   renewAdAction,
@@ -89,7 +90,7 @@ export function AdSettingsMobile({
     setPaused(next);
     startTransition(async () => {
       const result = await toggleAdPausedAction(ad.id, next);
-      if (result.error) {
+      if (isActionError(result)) {
         setPaused(!next);
         toast.error(result.error);
         return;
@@ -101,7 +102,7 @@ export function AdSettingsMobile({
   const handleRenew = () => {
     startTransition(async () => {
       const result = await renewAdAction(ad.id);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -113,7 +114,7 @@ export function AdSettingsMobile({
     if (!confirm("E'lonni o'chirmoqchimisiz?")) return;
     startTransition(async () => {
       const result = await removeAd(ad.id);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -127,7 +128,7 @@ export function AdSettingsMobile({
     startTransition(async () => {
       const result = await purchasePromotion(ad.id, type);
       setPromoLoading(null);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }

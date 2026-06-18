@@ -6,6 +6,7 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { ModerationCard } from "./moderation-card";
 import { FilterChips } from "@/components/mobile/filter-chips";
+import { isActionError } from "@/lib/action-result";
 import { moderateAd } from "@/lib/actions";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -62,7 +63,7 @@ export function AdminAdsClient({
     startTransition(async () => {
       const result = await moderateAd(adId, action);
       setLoadingId(null);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }

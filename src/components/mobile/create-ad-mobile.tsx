@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MobileHeader } from "@/components/mobile/mobile-header";
 import { UploadBox } from "@/components/mobile/upload-box";
 import { MAP_CENTER } from "@/lib/constants";
+import { isActionError } from "@/lib/action-result";
 import { submitAd, getListingCostPreview } from "@/lib/actions";
 import { InsufficientCoinsModal } from "@/components/mobile/insufficient-coins-modal";
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
@@ -198,7 +199,7 @@ export function CreateAdMobile({
       imageIds: images.map((img) => img.fullUrl),
     });
     setLoading(false);
-    if (result.error) {
+    if (isActionError(result)) {
       if (result.code === "INSUFFICIENT_COINS") {
         setInsufficientModal({
           balance: result.balance ?? initialBalance,

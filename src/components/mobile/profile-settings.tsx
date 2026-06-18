@@ -13,6 +13,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { isActionError } from "@/lib/action-result";
 import { updateProfile, updatePassword, deleteAccount } from "@/lib/actions";
 import { PushNotificationSettings } from "@/components/pwa/push-notification-settings";
 import { cn } from "@/lib/utils";
@@ -66,7 +67,7 @@ export function ProfileSettings({ user, onProfileUpdated }: ProfileSettingsProps
   const handleSaveProfile = () => {
     startTransition(async () => {
       const result = await updateProfile(name);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -78,7 +79,7 @@ export function ProfileSettings({ user, onProfileUpdated }: ProfileSettingsProps
   const handleChangePassword = () => {
     startTransition(async () => {
       const result = await updatePassword(passwordForm);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -96,7 +97,7 @@ export function ProfileSettings({ user, onProfileUpdated }: ProfileSettingsProps
 
     startTransition(async () => {
       const result = await deleteAccount(deleteEmail);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }

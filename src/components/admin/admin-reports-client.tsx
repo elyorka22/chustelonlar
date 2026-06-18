@@ -10,6 +10,7 @@ import {
   isHighPriorityReport,
   type ReportStatus,
 } from "@/lib/admin-mock";
+import { isActionError } from "@/lib/action-result";
 import {
   adminDeleteAd,
   adminResolveReport,
@@ -62,7 +63,7 @@ export function AdminReportsClient({
     startTransition(async () => {
       const result = await adminResolveReport(reportId);
       setLoadingId(null);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -76,7 +77,7 @@ export function AdminReportsClient({
     startTransition(async () => {
       const result = await adminDeleteAd(adId);
       setLoadingId(null);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }

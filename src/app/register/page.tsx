@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isActionError } from "@/lib/action-result";
 import { registerUser } from "@/lib/actions";
 import { toast } from "sonner";
 
@@ -31,7 +32,7 @@ export default function RegisterPage() {
     const result = await registerUser(formData);
     setLoading(false);
 
-    if (result.error) {
+    if (isActionError(result)) {
       toast.error(result.error);
       return;
     }

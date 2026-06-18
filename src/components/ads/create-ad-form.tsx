@@ -11,6 +11,7 @@ import { SelectField } from "@/components/ui/select";
 import { ProgressBar } from "@/components/ui/progress";
 import { MAX_IMAGES, MAX_IMAGE_SIZE } from "@/lib/constants";
 import { MAP_CENTER } from "@/lib/constants";
+import { isActionError } from "@/lib/action-result";
 import { submitAd } from "@/lib/actions";
 import { toast } from "sonner";
 import type { CategoryData } from "@/types";
@@ -156,7 +157,7 @@ export function CreateAdForm() {
 
     setLoading(false);
 
-    if (result.error) {
+    if (isActionError(result)) {
       toast.error(result.error);
       return;
     }

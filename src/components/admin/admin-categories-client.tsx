@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Trash2, ImageIcon, Plus, X } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { CategoryGridCard } from "@/components/mobile/category-grid-card";
+import { isActionError } from "@/lib/action-result";
 import {
   adminUpdateCategoryImage,
   adminRemoveCategoryImage,
@@ -71,7 +72,7 @@ export function AdminCategoriesClient({
       startTransition(async () => {
         const result = await adminUpdateCategoryImage(slug, imageUrl);
         setUploading(null);
-        if (result.error) {
+        if (isActionError(result)) {
           toast.error(result.error);
           return;
         }
@@ -89,7 +90,7 @@ export function AdminCategoriesClient({
   const handleRemoveImage = (slug: string) => {
     startTransition(async () => {
       const result = await adminRemoveCategoryImage(slug);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -136,7 +137,7 @@ export function AdminCategoriesClient({
       if (imageUrl) fd.append("imageUrl", imageUrl);
 
       const result = await adminCreateCategory(fd);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }
@@ -154,7 +155,7 @@ export function AdminCategoriesClient({
 
     startTransition(async () => {
       const result = await adminDeleteCategory(slug);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }

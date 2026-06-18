@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { AdminHeader } from "./admin-header";
 import { UserCard } from "./user-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isActionError } from "@/lib/action-result";
 import {
   adminBanUser,
   adminUnbanUser,
@@ -65,7 +66,7 @@ export function AdminUsersClient({
     startTransition(async () => {
       const result = await action();
       setLoadingId(null);
-      if (result.error) {
+      if (isActionError(result)) {
         toast.error(result.error);
         return;
       }

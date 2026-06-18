@@ -10,6 +10,7 @@ import {
   unsubscribeFromPush,
 } from "@/lib/push-client";
 import { cn } from "@/lib/utils";
+import { isActionError } from "@/lib/action-result";
 
 export function PushNotificationSettings() {
   const [enabled, setEnabled] = useState(false);
@@ -30,7 +31,7 @@ export function PushNotificationSettings() {
     startTransition(async () => {
       if (enabled) {
         const result = await unsubscribeFromPush();
-        if (result.error) {
+        if (isActionError(result)) {
           toast.error(result.error);
           return;
         }

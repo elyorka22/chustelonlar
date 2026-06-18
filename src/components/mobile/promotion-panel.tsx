@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Crown, Flame, TrendingUp, Loader2 } from "lucide-react";
 import { MonetkaIcon } from "@/components/ui/monetka-icon";
+import { isActionError } from "@/lib/action-result";
 import { purchasePromotion } from "@/lib/actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,7 @@ export function PromotionPanel({ adId, costs, active }: PromotionPanelProps) {
     startTransition(async () => {
       const result = await purchasePromotion(adId, type);
       setLoadingType(null);
-      if (result.error) {
+      if (isActionError(result)) {
         if (result.code === "INSUFFICIENT_COINS") {
           toast.error("Monetka yetarli emas");
         } else {
