@@ -89,6 +89,18 @@ export default function RegisterPage() {
         <Button type="submit" className="w-full" size="lg" disabled={loading}>
           {loading ? "Kutilmoqda..." : "Ro'yxatdan o'tish"}
         </Button>
+
+        <p className="text-center text-xs leading-relaxed text-gray-500">
+          Ro&apos;yxatdan o&apos;tish orqali{" "}
+          <Link href="/terms" className="text-primary hover:underline">
+            Foydalanish shartlari
+          </Link>{" "}
+          va{" "}
+          <Link href="/privacy" className="text-primary hover:underline">
+            Maxfiylik siyosati
+          </Link>
+          ga rozilik bildirasiz.
+        </p>
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-500">

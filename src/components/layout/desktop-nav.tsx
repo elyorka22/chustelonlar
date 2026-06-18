@@ -27,7 +27,17 @@ export function DesktopFooter() {
   return (
     <footer className="mt-16 border-t border-gray-100 bg-secondary/50 py-12">
       <div className="mx-auto max-w-7xl px-6 text-center text-sm text-gray-500">
-        © {new Date().getFullYear()} {APP_NAME}. Chust shahri e&apos;lonlar platformasi.
+        <nav className="mb-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+          <Link href="/terms" className="font-medium text-gray-600 hover:text-primary">
+            Foydalanish shartlari
+          </Link>
+          <Link href="/privacy" className="font-medium text-gray-600 hover:text-primary">
+            Maxfiylik siyosati
+          </Link>
+        </nav>
+        <p>
+          © {new Date().getFullYear()} {APP_NAME}. Chust shahri e&apos;lonlar platformasi.
+        </p>
       </div>
     </footer>
   );

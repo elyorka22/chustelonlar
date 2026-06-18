@@ -113,6 +113,22 @@ export function MobileHeader({
                   {item.label}
                 </Link>
               ))}
+              <div className="mt-auto border-t border-gray-100 pt-4">
+                <Link
+                  href="/terms"
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-2xl px-4 py-2.5 text-[13px] font-medium text-gray-500 active:bg-secondary"
+                >
+                  Foydalanish shartlari
+                </Link>
+                <Link
+                  href="/privacy"
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-2xl px-4 py-2.5 text-[13px] font-medium text-gray-500 active:bg-secondary"
+                >
+                  Maxfiylik siyosati
+                </Link>
+              </div>
             </motion.nav>
           </>
         )}
